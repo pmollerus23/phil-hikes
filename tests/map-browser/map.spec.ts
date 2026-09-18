@@ -21,15 +21,15 @@ test('real MapLibre canvas, overlays, style switch, terrain control, and profile
  const after=await page.getByRole('button',{name:/Night campsite · Little Rock/}).boundingBox();expect(Math.abs(before!.x-after!.x)).toBeLessThan(2);expect(Math.abs(before!.y-after!.y)).toBeLessThan(2);
  expect(await canvas?.evaluate(el=>el===document.querySelector('.maplibregl-canvas'))).toBe(true);
  await page.getByRole('button',{name:/3D terrain/}).click();await expect(page.getByRole('button',{name:/3D terrain/})).toHaveAttribute('aria-pressed','true');await expect.poll(()=>demRequests).toBeGreaterThan(0);await page.getByRole('button',{name:/3D terrain/}).click();
- await page.getByRole('button',{name:'Outdoor',exact:true}).click();await expect(page.getByRole('heading',{name:'Little Rock Creek Lake',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Topo',exact:true}).click();await expect(page.getByRole('heading',{name:'Little Rock Creek Lake',exact:true})).toBeVisible();
  await page.getByRole('button',{name:/Night campsite · Little Rock/}).click();await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Night campsite');
  await page.screenshot({path:`test-results/fixture-map-${test.info().project.name}.png`,fullPage:true});expect(errors).toEqual([]);
 });
 test('map route can be selected, and provider failure has an actionable message',async({page})=>{
- await page.goto('/map');await expect(page.locator('.waypoint-marker')).not.toHaveCount(0);
+ await page.goto('/map?trip=little-rock-creek-lake-mt-2024');await expect(page.locator('.waypoint-marker')).not.toHaveCount(0);
  const start=page.getByRole('button',{name:'Start of mapped geometry · Little Rock Creek Lake'});await expect(start).toBeVisible();
  // Marker anchor is an actual route vertex. Remove marker hit targets to exercise the line layer underneath.
- await page.getByRole('button',{name:/The trip archive/}).click();await page.getByRole('button',{name:'Satellite',exact:true}).click();await page.getByRole('button',{name:'Outdoor',exact:true}).click();await page.waitForTimeout(800);
+ await page.locator('.panel-toggle').click();await page.getByRole('button',{name:'Satellite',exact:true}).click();await page.getByRole('button',{name:'Topo',exact:true}).click();await page.waitForTimeout(800);
  const box=await start.boundingBox();expect(box).not.toBeNull();await page.addStyleTag({content:'.waypoint-marker{visibility:hidden}'});await page.mouse.click(box!.x+box!.width/2,box!.y+box!.height/2);
  await expect(page).toHaveURL(/trip=little-rock-creek/);
  await page.route('**/maps/satellite/style.json*',r=>r.fulfill({status:403,body:'Test denied'}));await page.getByRole('button',{name:'Satellite',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Map tiles could not load');
@@ -37,4 +37,24 @@ test('map route can be selected, and provider failure has an actionable message'
 test('unsupported WebGL retains the trip archive',async({page})=>{
  await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:any[]){if(type==='webgl2')return null;return original.apply(this,[type,...args] as any);} as typeof original;});
  await page.goto('/map?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
+});
+
+test('zooming out groups each trip and its marker restores individual waypoints', async({page}) => {
+ await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+ await expect(page.locator('.waypoint-marker')).toHaveCount(3);
+ await page.locator('.panel-toggle').click();
+ for(let i=0;i<6;i++) await page.getByRole('button',{name:'Zoom out',exact:true}).click();
+ const trip=page.getByRole('button',{name:'Trip · Little Rock Creek Lake',exact:true});
+ await expect(trip).toBeVisible();
+ await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ await page.screenshot({path:`test-results/grouped-map-${test.info().project.name}.png`,fullPage:true});
+ await trip.click();
+ await expect(page.locator('.waypoint-marker')).toHaveCount(3);
+ await expect(trip).toHaveCount(0);
+ await page.locator('.panel-toggle').click();
+ await page.getByRole('button',{name:'← All trips',exact:true}).click();
+ await expect(page.locator('.trip-marker')).not.toHaveCount(0);
+ await page.getByRole('button',{name:'Trip · Little Rock Creek Lake',exact:true}).click();
+ await expect(page).toHaveURL(/trip=little-rock-creek-lake-mt-2024/);
+ await expect(page.locator('.waypoint-marker')).toHaveCount(3);
 });
