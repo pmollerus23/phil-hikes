@@ -9,16 +9,55 @@ const pt=(lon:number,ele?:number,time?:string)=>`<trkpt lat="40" lon="${lon}">${
 const p=(lon:number,elevation:number|null=null):Point=>({lon,lat:40,elevation,time:null});
 test('representative supplied Gaia route, symbols, descriptions, styles, and aligned times',async()=>{
  const {trip,detail}=parseGpx(await readFile('gpx_map_data/maine-august-2026.gpx','utf8'),'maine-august-2026.gpx');
- assert.equal(detail.paths.length,9);assert.ok(detail.paths.every(p=>p.kind==='route'));
- assert.equal(detail.paths[0].segments[0].points.length,339);
- assert.equal(detail.paths[0].segments[0].points[0].time,'2026-08-10T00:50:49Z');
- assert.equal(detail.paths[0].segments[0].points[0].elevation,658);
- assert.deepEqual(detail.paths[0].extensions,{line:{color:'FFEF00'}});
+ assert.equal(detail.paths.length,10);assert.ok(detail.paths.every(p=>p.kind==='route'));
+ const day6=detail.paths.find(path=>path.name==='Day 6')!;
+ assert.equal(day6.segments[0].points.length,339);
+ assert.equal(day6.segments[0].points[0].time,'2026-08-10T00:50:49Z');
+ assert.equal(day6.segments[0].points[0].elevation,658);
+ assert.deepEqual(day6.extensions,{line:{color:'FFEF00'}});
+ const itinerary=detail.paths.find(path=>path.name==='Rangeley to Flagstaff AT Section')!;
+ assert.equal(itinerary.segments[0].points.length,4182);
+ assert.equal(detail.paths.find(path=>path.name==='Maine AT Section Route')?.segments[0].points.length,3441);
  assert.equal(trip.waypoints.find(w=>w.name==='Shuttle Drop Off')?.kind,'start');
  assert.equal(trip.waypoints.filter(w=>w.kind==='camp').length,6);
  assert.equal(trip.waypoints.find(w=>w.name==='Sugarloaf Summit')?.symbol,'emoji-🗻');
  assert.ok(trip.issues.some(s=>s.includes('empty')));
- assert.equal(detail.paths[8].segments[0].points.length,0);
+ assert.equal(detail.paths.find(path=>path.name==='untitled')?.segments[0].points.length,0);
+});
+test('Maine publishes only its continuous route while retaining source inventory and waypoint notes',async()=>{
+  const xml=await readFile('gpx_map_data/maine-august-2026.gpx','utf8');
+  const overrides:Record<string,Override>=JSON.parse(await readFile('data/trip-overrides.json','utf8'));
+  const source=parseGpx(xml,'maine-august-2026.gpx');
+  const {trip,detail,inventory}=parseGpx(xml,'maine-august-2026.gpx',overrides['maine-august-2026']);
+  const route=source.detail.paths.find(path=>path.name==='Maine AT Section Route')!;
+  assert.deepEqual(detail.paths,[route]);
+  assert.equal(route.segments.length,1);
+  assert.equal(route.segments[0].points.length,3441);
+  assert.deepEqual(trip.statsPathIds,[route.id]);
+  assert.deepEqual(trip.stats,route.segments[0].stats);
+  assert.ok(Math.abs(trip.stats.distanceM/1609.344-61.51)<.01);
+  assert.equal(trip.overview.features.length,1);
+  assert.equal(trip.overview.features[0].properties?.pathId,route.id);
+  assert.equal(detail.geojson.features.length,1);
+  assert.equal(detail.geojson.features[0].geometry.coordinates.length,3441);
+  assert.deepEqual(trip.waypoints,source.trip.waypoints);
+  assert.equal(trip.waypoints.length,10);
+  assert.ok(!trip.issues.some(issue=>/empty|Multiple planned routes/.test(issue)));
+  assert.deepEqual(inventory,source.inventory);
+});
+test('path overrides exclude alternative bounds and endpoints and reject invalid references',()=>{
+  const xml=gpx('<rte><name>Alternative</name><rtept lat="40" lon="-110"/><rtept lat="41" lon="-109"/></rte><rte><name>Chosen</name><rtept lat="42" lon="-73"/><rtept lat="43" lon="-72"/></rte>');
+  const {trip,detail,inventory}=parseGpx(xml,'selected.gpx',{pathIds:['rte-2']});
+  assert.deepEqual(trip.bounds,[-73,42,-72,43]);
+  assert.deepEqual(trip.statsPathIds,['rte-2']);
+  assert.deepEqual(detail.paths.map(path=>path.id),['rte-2']);
+  assert.equal(trip.waypoints.find(w=>w.kind==='start')?.lon,-73);
+  assert.equal(trip.waypoints.find(w=>w.kind==='end')?.lon,-72);
+  assert.equal(inventory.routes,2);
+  assert.equal(inventory.points,4);
+  assert.throws(()=>parseGpx(xml,'selected.gpx',{pathIds:['missing']}),/Invalid pathIds/);
+  assert.throws(()=>parseGpx(xml,'selected.gpx',{pathIds:['rte-2','rte-2']}),/Invalid pathIds/);
+  assert.throws(()=>parseGpx(xml,'selected.gpx',{pathIds:['rte-2'],statsPathIds:['rte-1']}),/Invalid statsPathIds/);
 });
 test('tracks, routes, segments and point extensions are preserved without gap bridges',()=>{
  const xml=gpx(`<trk><name>Recorded</name><trkseg>${pt(-73,10)}${pt(-72.999,20)}</trkseg><trkseg>${pt(-110,500)}${pt(-109.999,510)}</trkseg></trk><rte><name>Plan</name><rtept lat="42" lon="-73"><ele>1</ele><extensions><id>abc</id></extensions></rtept><rtept lat="42.01" lon="-73"><ele>10</ele></rtept></rte>`);
@@ -63,5 +102,5 @@ test('all 12 exports reconcile with independently counted source structures and 
  const asset=JSON.parse(await readFile(`public/trips/${result.trip.id}.json`,'utf8'));assert.deepEqual(asset,result.detail);
  routes+=inv.routes;points+=inv.points;wps+=inv.sourceWaypoints;camps+=inv.campsites;
  }
- assert.equal(routes,22);assert.equal(points,26053);assert.equal(wps,39);assert.equal(camps,26);
+ assert.equal(routes,23);assert.equal(points,29494);assert.equal(wps,39);assert.equal(camps,26);
 });

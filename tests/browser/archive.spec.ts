@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 const id='maine-august-2026';
 test('direct link loads trip, full profile, and selectable waypoint descriptions',async({page})=>{
  await page.goto(`/map?trip=${id}`);await expect(page.getByRole('heading',{name:'Rangeley to Flagstaff',exact:true})).toBeVisible();await expect(page.getByRole('slider',{name:'Explore elevation profile'})).toBeVisible();
+ await expect(page.getByRole('slider')).toHaveAttribute('max','3440');await expect(page.locator('.trip-stats')).toContainText('61.5 mi');
+ await page.getByText('Source geometry · 1 path',{exact:true}).click();await expect(page.locator('.data-notes').first()).toContainText('Maine AT Section Route');await expect(page.locator('.data-notes').first()).not.toContainText('Day 1');
  await page.getByRole('button',{name:/Sugarloaf Summit.*summit/}).click();await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Cool summit.');
  await page.screenshot({path:`test-results/selected-${test.info().project.name}.png`,fullPage:true});
 });
@@ -34,7 +36,7 @@ test('failed detail retains summary and offers retry',async({page})=>{
 });
 test('late detail response cannot replace a newer selection',async({page})=>{
  await page.route('**/trips/beartown-tyringham-solo-1-nighter-july-2026.json',async route=>{await new Promise(resolve=>setTimeout(resolve,600));try{await route.continue();}catch{/* request aborted by selection */}});
- await page.goto('/map');await page.getByRole('button',{name:/01 Beartown/}).click();await page.getByRole('button',{name:'← All trips'}).click();await page.getByRole('button',{name:/Rangeley to Flagstaff Maine/}).click();await expect(page.getByRole('slider')).toHaveAttribute('max','4181');await expect(page.getByRole('heading',{name:'Rangeley to Flagstaff',exact:true})).toBeVisible();
+ await page.goto('/map');await page.getByRole('button',{name:/01 Beartown/}).click();await page.getByRole('button',{name:'← All trips'}).click();await page.getByRole('button',{name:/Rangeley to Flagstaff Maine/}).click();await expect(page.getByRole('slider')).toHaveAttribute('max','3440');await expect(page.getByRole('heading',{name:'Rangeley to Flagstaff',exact:true})).toBeVisible();
 });
 test('invalid index is rejected and original GPX is not served',async({page,request})=>{
  const original=await request.get('/gpx_map_data/shenandoah.gpx');expect(original.status()).toBeGreaterThanOrEqual(400);

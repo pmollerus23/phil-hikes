@@ -6,13 +6,13 @@
 .provider-logo{position:absolute;left:10px;bottom:4px;display:block;background:#ffffffdb;border-radius:3px;padding:2px 4px}.provider-logo img{display:block}.maplibregl-ctrl-bottom-left{left:95px}@media(max-width:700px){.provider-logo{left:4px;bottom:calc(2px + env(safe-area-inset-bottom));padding:1px 2px}.provider-logo img{width:66px;height:17px}.maplibregl-ctrl-bottom-left{left:0}}
 @media(max-width:700px){.style-switch button{min-height:44px}}
 
-.trip-marker{display:flex;align-items:center;gap:5px;min-height:44px;padding:0 12px;border:1px solid #a2a2a2;border-radius:0;background:var(--paper);color:var(--ink);box-shadow:0 2px 7px #00000020;font-size:11px;font-weight:600;cursor:pointer}.trip-marker:hover{border-color:#ff7900;background:#fff3e5}.trip-marker:focus-visible{outline:2px solid #ff7900;outline-offset:3px}
+
 
 /* Technical field-note typography and restrained orange accents. */
 .style-switch button,.terrain-button{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .panel-toggle{font-weight:700}.status-dot{border-radius:0}.panel-content h1{overflow-wrap:anywhere}
 .archive-label,.section-label{color:var(--ink);font-weight:700}.trip-list strong{font-weight:700}.trip-list button:hover .trip-arrow{color:var(--accent)}
-.waypoint-detail{border-left:3px solid var(--accent)}.map-legend{font-size:10px}.trip-marker{font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-color:var(--ink)}
+.waypoint-detail{border-left:3px solid var(--accent)}.map-legend{font-size:10px}
 .maplibregl-ctrl-group{border-radius:0!important}.profile-readout strong{color:var(--accent)}
 
 /* Screen-space guides: no map reprojection, no pointer interception. */
@@ -23,3 +23,15 @@
 .crosshair-horizontal{width:100%;height:1px;transform:translateY(var(--cursor-y));background:linear-gradient(to right,currentColor calc(var(--cursor-x) - 6px),transparent calc(var(--cursor-x) - 6px),transparent calc(var(--cursor-x) + 6px),currentColor calc(var(--cursor-x) + 6px))}
 .crosshair-vertical{width:1px;height:100%;transform:translateX(var(--cursor-x));background:linear-gradient(to bottom,currentColor calc(var(--cursor-y) - 6px),transparent calc(var(--cursor-y) - 6px),transparent calc(var(--cursor-y) + 6px),currentColor calc(var(--cursor-y) + 6px))}
 @media(hover:hover){.maplibregl-canvas:active{cursor:grabbing!important}}
+
+/* Fine survey-label frame and leader anchored to the route. */
+.trip-marker{display:block;width:64px;height:56px;padding:0;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.trip-marker svg{display:block;width:100%;height:100%;overflow:visible}
+.trip-marker-stem{fill:none;stroke:currentColor;stroke-width:.75;opacity:.65}
+.trip-marker-frame{fill:#ffffffdc;stroke:currentColor;stroke-opacity:.35;stroke-width:.75}
+.trip-marker-brackets{fill:none;stroke:currentColor;stroke-width:1}
+.trip-marker-accent{fill:none;stroke:var(--accent);stroke-width:1}
+.trip-marker-anchor{fill:var(--accent)}
+.trip-marker text{fill:currentColor;font:700 8px Helvetica,Arial,sans-serif;letter-spacing:1.4px}
+.trip-marker:hover{color:var(--accent)}.trip-marker:hover .trip-marker-frame{fill:#fff8f2;stroke-opacity:.8}
+.trip-marker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

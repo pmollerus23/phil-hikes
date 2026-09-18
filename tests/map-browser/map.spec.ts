@@ -9,6 +9,21 @@ test.beforeEach(async({page})=>{
   return r.fulfill({path:'tests/fixtures/flat-dem.png',contentType:'image/png'});
  });
 });
+test('Maine shows one continuous route, its full profile, and all waypoint notes',async({page})=>{
+  const inventory=await (await page.request.get('/trips/index.json')).json();
+  await page.route('**/trips/index.json',route=>route.fulfill({json:inventory.filter((trip:{id:string})=>trip.id==='maine-august-2026')}));
+  await page.goto('/map?trip=maine-august-2026');
+  await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+  await expect(page.getByRole('slider')).toHaveAttribute('max','3440');
+  await expect(page.locator('.trip-stats')).toContainText('61.5 mi');
+  await expect(page.locator('.waypoint-marker')).toHaveCount(10);
+  await page.getByText('Source geometry · 1 path',{exact:true}).click();
+  await expect(page.locator('.data-notes').first()).toContainText('Maine AT Section Route');
+  await expect(page.locator('.data-notes').first()).not.toContainText('Day 1');
+  await page.getByRole('button',{name:/Sugarloaf Summit.*summit/}).click();
+  await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Cool summit.');
+  await page.screenshot({path:`test-results/maine-continuous-route-${test.info().project.name}.png`,fullPage:true});
+});
 test('real MapLibre canvas, overlays, style switch, terrain control, and profile marker survive UI changes',async({page})=>{
  let demRequests=0;page.on('request',r=>{if(r.url().includes('/fixture/'))demRequests++;});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
@@ -39,6 +54,75 @@ test('unsupported WebGL retains the trip archive',async({page})=>{
  await page.goto('/map?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
 });
 
+test('clearing selection restores other trips and gently zooms out around the current area', async({page,isMobile}) => {
+  const inventory = await (await page.request.get('/trips/index.json')).json();
+  const trips = inventory.filter((trip: {id:string}) => trip.id.startsWith('dolly-sods-') || trip.id==='little-rock-creek-lake-mt-2024');
+  await page.route('**/trips/index.json', route => route.fulfill({json:trips}));
+  await page.goto('/map?trip=dolly-sods-september-2025');
+  const summer = page.getByRole('button',{name:'Trip · Dolly Sods · summer',exact:true});
+  const fall = page.getByRole('button',{name:'Trip · Dolly Sods · fall',exact:true});
+  const distant = page.getByRole('button',{name:/ · Little Rock Creek Lake$/});
+  await expect(page.getByRole('slider')).toBeVisible();
+  await expect(summer).toBeVisible();
+  await expect(distant).toHaveCount(0);
+  await page.locator('.waypoint-list button').first().click();
+  await expect(page.getByRole('region',{name:'Waypoint details'})).toBeVisible();
+  await expect(page.locator('.profile-marker')).toHaveCount(1);
+  const readScale = () => page.locator('.maplibregl-ctrl-scale').evaluate(el => {
+    const label = el.textContent!.trim().replaceAll(',','');
+    return parseFloat(label)*(label.endsWith('mi')?5280:1)/el.getBoundingClientRect().width;
+  });
+  await expect.poll(readScale).toBeGreaterThan(0);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const scaleBefore = await readScale();
+  const before = (await summer.boundingBox())!;
+  const canvas = page.locator('.maplibregl-canvas');
+  const box = (await canvas.boundingBox())!;
+  const x = box.x+(isMobile?box.width*.2:box.width-55), y = box.y+(isMobile?150:75);
+  expect(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.classList.contains('maplibregl-canvas'),{x,y})).toBe(true);
+  if(isMobile)await page.touchscreen.tap(x,y);
+  else await page.mouse.click(x,y);
+  await expect(page).not.toHaveURL(/trip=/);
+  await expect(page.locator('.trip-list button')).toHaveCount(trips.length);
+  await expect(page.getByRole('region',{name:'Waypoint details'})).toHaveCount(0);
+  await expect(page.locator('.profile-marker')).toHaveCount(0);
+  await expect(page.locator('.waypoint-marker[aria-label$="Dolly Sods · fall"]')).toHaveCount(0);
+  await expect(fall).toHaveCount(1);
+  await expect(distant).not.toHaveCount(0);
+  await expect.poll(async()=>(await readScale())/scaleBefore).toBeGreaterThan(1.6);
+  expect((await readScale())/scaleBefore).toBeLessThan(1.8);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const after = (await summer.boundingBox())!;
+  // The flag's route anchor scales toward the same map center by 0.75 zoom levels.
+  const ratio = 2**-.75;
+  const centerX = box.x+box.width/2, centerY = box.y+box.height/2;
+  const expectedX = centerX+(before.x+before.width/2-centerX)*ratio-after.width/2;
+  const expectedY = centerY+(before.y+before.height-centerY)*ratio-after.height;
+  expect(Math.abs(after.x-expectedX)).toBeLessThan(2);
+  expect(Math.abs(after.y-expectedY)).toBeLessThan(2);
+  // Clicking again with no selection must not continue zooming out.
+  const scaleAfter = await readScale();
+  if(isMobile)await page.touchscreen.tap(x,y);
+  else await page.mouse.click(x,y);
+  expect(await readScale()).toBe(scaleAfter);
+  await page.screenshot({path:`test-results/deselected-map-${test.info().project.name}.png`,fullPage:true});
+  await page.goBack();
+  await expect(page).toHaveURL(/trip=dolly-sods-september-2025/);
+  await expect(page.getByRole('slider')).toBeVisible();
+  await expect(fall).toHaveCount(0);
+  await expect(distant).toHaveCount(0);
+  const scaleBeforeButton = await readScale();
+  await page.getByRole('button',{name:'← All trips',exact:true}).click();
+  await expect(page).not.toHaveURL(/trip=/);
+  await expect.poll(async()=>(await readScale())/scaleBeforeButton).toBeGreaterThan(1.6);
+  expect((await readScale())/scaleBeforeButton).toBeLessThan(1.8);
+  await page.goBack();
+  await expect(page).toHaveURL(/trip=dolly-sods-september-2025/);
+  await page.goForward();
+  await expect(page).not.toHaveURL(/trip=/);
+  await expect(fall).toHaveCount(1);
+});
+
 test('zooming out groups each trip and its marker restores individual waypoints', async({page}) => {
  await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
  await expect(page.locator('.waypoint-marker')).toHaveCount(3);
@@ -53,6 +137,7 @@ test('zooming out groups each trip and its marker restores individual waypoints'
  await expect(trip).toHaveCount(0);
  await page.locator('.panel-toggle').click();
  await page.getByRole('button',{name:'← All trips',exact:true}).click();
+ await page.getByRole('button',{name:'Frame current trip or full archive',exact:true}).click();
  await expect(page.locator('.trip-marker')).not.toHaveCount(0);
  await page.getByRole('button',{name:'Trip · Little Rock Creek Lake',exact:true}).click();
  await expect(page).toHaveURL(/trip=little-rock-creek-lake-mt-2024/);
@@ -73,8 +158,11 @@ test('crosshair follows the map pointer without intercepting controls or touch',
   return;
  }
  const x=Math.round(bounds.width*.65),y=220;
- await page.mouse.move(bounds.x+x,bounds.y+y);
- await expect(crosshair).toBeVisible();
+ await expect.poll(async()=>{
+  await page.mouse.move(bounds.x+x+1,bounds.y+y);
+  await page.mouse.move(bounds.x+x,bounds.y+y);
+  return crosshair.isVisible();
+ }).toBe(true);
  await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x}px`);
  await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-y'))).toBe(`${y}px`);
  const horizontal=(await page.locator('.crosshair-horizontal').boundingBox())!;
@@ -96,4 +184,41 @@ test('crosshair follows the map pointer without intercepting controls or touch',
  await page.keyboard.press('Tab');await expect(crosshair).toBeHidden();
  await page.mouse.move(bounds.x+x+2,bounds.y+y);await expect(crosshair).toBeVisible();
  await page.getByRole('link',{name:'Home',exact:true}).hover();await expect(crosshair).toBeHidden();
+});
+
+test('overlapping trips stay as labels until selected, and only the selected trip expands', async({page}) => {
+ const inventory = await (await page.request.get('/trips/index.json')).json();
+ const trips = inventory.filter((trip: { id: string }) => trip.id.startsWith('dolly-sods-'));
+ await page.route('**/trips/index.json', route => route.fulfill({json:trips}));
+ await page.goto('/map');
+ const summer = page.getByRole('button',{name:'Trip · Dolly Sods · summer',exact:true});
+ const fall = page.getByRole('button',{name:'Trip · Dolly Sods · fall',exact:true});
+ await expect(summer).toBeVisible();
+ await expect(fall).toBeVisible();
+ await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ await page.locator('.panel-toggle').click();
+ for(let i=0;i<3;i++) await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+ await expect(page.locator('.trip-marker')).toHaveCount(2);
+ await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ // Restore the framing after zooming, then choose the route's floating label.
+ await page.getByRole('button',{name:'Frame current trip or full archive'}).click();
+ await fall.click();
+ await expect(page).toHaveURL(/trip=dolly-sods-september-2025/);
+ await expect(fall).toHaveCount(0);
+ await expect(summer).toHaveCount(1);
+ await expect(page.locator('.waypoint-marker')).toHaveCount(trips.find((trip: {id:string})=>trip.id==='dolly-sods-september-2025').waypoints.length);
+ await expect(page.locator('.waypoint-marker').first()).toHaveAttribute('aria-label',/Dolly Sods · fall$/);
+ await page.screenshot({path:`test-results/overlapping-trip-labels-${test.info().project.name}.png`,fullPage:true});
+ await page.getByRole('button',{name:'← All trips',exact:true}).click();
+ await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ await expect(page.locator('.trip-marker')).toHaveCount(2);
+ // Selection from the archive list has the same behavior as clicking a flag.
+ await page.getByRole('button',{name:/01 Dolly Sods/}).click();
+ await expect(page).toHaveURL(/trip=dolly-sods-june-2023/);
+ await expect(summer).toHaveCount(0);
+ await expect(fall).toHaveCount(1);
+ await expect(page.locator('.waypoint-marker').first()).toHaveAttribute('aria-label',/Dolly Sods · summer$/);
+ await page.goBack();
+ await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ await expect(page.locator('.trip-marker')).toHaveCount(2);
 });
