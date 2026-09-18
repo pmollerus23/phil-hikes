@@ -58,3 +58,42 @@ test('zooming out groups each trip and its marker restores individual waypoints'
  await expect(page).toHaveURL(/trip=little-rock-creek-lake-mt-2024/);
  await expect(page.locator('.waypoint-marker')).toHaveCount(3);
 });
+
+test('crosshair follows the map pointer without intercepting controls or touch', async({page,isMobile}) => {
+ await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+ const canvas=page.locator('.maplibregl-canvas');
+ const crosshair=page.locator('.map-crosshair');
+ await expect(page.locator('.waypoint-marker')).toHaveCount(3);
+ await expect(crosshair).toBeHidden();
+ const bounds=(await canvas.boundingBox())!;
+ if(isMobile){
+  await page.touchscreen.tap(bounds.x+bounds.width*.6,bounds.y+160);
+  await expect(crosshair).toBeHidden();
+  await page.screenshot({path:'test-results/crosshair-mobile.png'});
+  return;
+ }
+ const x=Math.round(bounds.width*.65),y=220;
+ await page.mouse.move(bounds.x+x,bounds.y+y);
+ await expect(crosshair).toBeVisible();
+ await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x}px`);
+ await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-y'))).toBe(`${y}px`);
+ const horizontal=(await page.locator('.crosshair-horizontal').boundingBox())!;
+ const vertical=(await page.locator('.crosshair-vertical').boundingBox())!;
+ expect(horizontal.width).toBe(bounds.width);
+ expect(horizontal.height).toBe(1);
+ expect(vertical.height).toBe(bounds.height);
+ expect(vertical.width).toBe(1);
+ expect(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.classList.contains('maplibregl-canvas'),{x:bounds.x+x,y:bounds.y+y})).toBe(true);
+ await page.mouse.down();await page.mouse.move(bounds.x+x+30,bounds.y+y+20);await page.mouse.up();
+ await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x+30}px`);
+ await page.screenshot({path:'test-results/crosshair-desktop.png'});
+ await page.locator('.trip-panel').hover();await expect(crosshair).toBeHidden();
+ await page.getByRole('button',{name:'Satellite',exact:true}).click();
+ await expect(crosshair).toBeHidden();
+ await page.mouse.move(bounds.x+x,bounds.y+y);await expect(crosshair).toBeVisible();
+ await expect(crosshair).toHaveClass(/map-crosshair-satellite/);
+ await page.screenshot({path:'test-results/crosshair-satellite.png'});
+ await page.keyboard.press('Tab');await expect(crosshair).toBeHidden();
+ await page.mouse.move(bounds.x+x+2,bounds.y+y);await expect(crosshair).toBeVisible();
+ await page.getByRole('link',{name:'Home',exact:true}).hover();await expect(crosshair).toBeHidden();
+});

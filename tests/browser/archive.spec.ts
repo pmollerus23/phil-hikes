@@ -17,6 +17,9 @@ test('unknown ID, panel collapse, keyboard access, and shared Home link',async({
  const trip=page.getByRole('button',{name:/Otter Creek West Virginia/});await trip.focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/trip=otter/);await expect(page.getByRole('heading',{name:'Otter Creek',exact:true})).toBeVisible();
  const slider=page.getByRole('slider');await slider.focus();await page.keyboard.press('ArrowRight');await expect(slider).toHaveValue('1');
  await page.getByRole('link',{name:'Home',exact:true}).click();await expect(page).toHaveURL('/');await expect(page.getByRole('link',{name:/Explore the trip map/})).toBeVisible();
+ await page.evaluate(()=>document.fonts.ready);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:`test-results/home-${test.info().project.name}.png`,fullPage:true});
 });
 test('missing key setup, responsive layout and no unexpected JS errors',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/map');await expect(page.getByRole('heading',{name:/Places worth/})).toBeVisible();

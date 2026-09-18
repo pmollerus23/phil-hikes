@@ -2,6 +2,39 @@
 import Shell from '../layouts/Shell.astro';
 ---
 <Shell>
-  <main><p class="eyebrow">A PERSONAL OUTDOOR ARCHIVE</p><h1>A little further<br />off the beaten path.</h1><p class="intro">Miles on foot. Nights under canvas. A collection of routes, campsites, and memories from time outside.</p><a class="explore" href="/map">Explore the trip map <span aria-hidden="true">↗</span></a><div class="landscape" aria-hidden="true"><span>FIELD NOTES / 01</span><svg viewBox="0 0 900 220" fill="none"><path d="M0 200 160 95 225 136 410 12 585 153 680 67 900 210" stroke="currentColor" stroke-width="2"/><path d="m245 130 165-118 82 87-80-39-51 35-22-16M0 210l200-45 100 42 170-77 125 64 167-30 138 52" stroke="currentColor" opacity=".4"/></svg></div></main>
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> A PERSONAL OUTDOOR ARCHIVE</p>
+        <h1>A little further<br />off the beaten path.</h1>
+        <p class="intro">Miles on foot. Nights under canvas. A collection of routes, campsites, and memories from time outside.</p>
+        <a class="explore" href="/map">Explore the trip map <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="landscape" aria-hidden="true">
+        <div class="figure-label"><span>PHIL’S FIELD NOTES</span><span>NO. 001</span></div>
+        <svg viewBox="0 0 600 600" fill="none">
+          <g stroke="#fff" stroke-width=".7" opacity=".18">
+            <path d="M-40 490 155 285 218 340 365 140 660 480M-40 510 155 305 218 360 365 160 660 500M-40 530 155 325 218 380 365 180 660 520M-40 550 155 345 218 400 365 200 660 540M-40 570 155 365 218 420 365 220 660 560M-40 590 155 385 218 440 365 240 660 580M-40 610 155 405 218 460 365 260 660 600M-40 630 155 425 218 480 365 280 660 620" />
+          </g>
+          <path d="M-40 470 155 265 218 320 365 120 660 460" stroke="#fff" stroke-width="2"/>
+          <path d="m295 215 70-95 98 113-86-43-36 31-18-19-28 13ZM-40 510l210-60 100 31 130-57 130 68 130-24" stroke="#fff" opacity=".5"/>
+          <path d="m115 490 51-52 27 7 32-38 27-3 30-50 26-10 17-37 22-17 15-48" stroke="#ff7900" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="115" cy="490" r="5" fill="#ff7900"/><circle cx="362" cy="242" r="5" fill="#171717" stroke="#ff7900" stroke-width="2"/>
+          <path d="M480 115h24m-12-12v24" stroke="#fff" opacity=".45"/>
+        </svg>
+        <div class="figure-label"><span>ON FOOT & UNDER CANVAS</span><span>↗</span></div>
+      </div>
+    </section>
+    <section class="archive-intro" aria-label="Inside the archive">
+      <div><span class="index">01 / ROUTES</span><h2>Follow the miles.</h2><p>Recorded tracks and planned routes, all in one place.</p></div>
+      <div><span class="index">02 / CAMPSITES</span><h2>Stay a little longer.</h2><p>The stops, summits, and places along the way.</p></div>
+      <div><span class="index">03 / FIELD NOTES</span><h2>Keep the good parts.</h2><p>A few details to remember the time outside.</p></div>
+    </section>
+    <footer><span>PHIL’S FIELD NOTES</span><span>A personal record of time outside.</span></footer>
+  </main>
 </Shell>
-<style>main{max-width:1150px;margin:auto;padding:90px 36px 30px}.eyebrow{font-size:11px;letter-spacing:.2em;color:#69776a}h1{font-family:Georgia,serif;font-weight:400;font-size:clamp(46px,7vw,88px);line-height:1.08;letter-spacing:-.045em;margin:28px 0}.intro{font-size:17px;line-height:1.8;max-width:470px;color:#617062}.explore{margin-top:20px;display:inline-flex;gap:45px;padding:17px 23px;background:#294b39;color:#fff;border-radius:5px;text-decoration:none;font-size:14px}.landscape{margin:60px 0 0;color:#74846c}.landscape span{font-size:10px;letter-spacing:.15em}.landscape svg{display:block;width:100%;max-height:260px}@media(max-width:600px){main{padding:50px 24px}.landscape{margin-top:65px}}</style>
+<style>
+  main{max-width:1440px;margin:auto;padding:64px 48px 0}.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding-bottom:64px}.eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;display:flex;align-items:center;gap:10px}.eyebrow span{width:7px;height:7px;background:var(--accent)}h1{font:700 clamp(54px,6.1vw,88px)/.98 var(--heading-font);text-transform:uppercase;letter-spacing:-.025em;margin:28px 0;max-width:670px}.intro{font-size:16px;line-height:1.8;max-width:420px;color:var(--muted)}.explore{margin-top:22px;display:inline-flex;align-items:center;gap:40px;min-height:50px;padding:16px 24px;background:var(--accent);color:#fff;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:background .15s}.explore:hover{background:#ad3600}.explore span{font-size:20px;font-weight:400}.landscape{background:var(--ink);color:#fff;overflow:hidden;min-width:0}.landscape svg{display:block;width:100%;margin:-10px 0}.figure-label{display:flex;justify-content:space-between;align-items:center;padding:24px;font-size:9px;letter-spacing:.12em}.figure-label:last-child{border-top:1px solid #ffffff26}.figure-label:last-child span:last-child{font-size:18px;color:#ff7900}.archive-intro{border-top:1px solid var(--rule);display:grid;grid-template-columns:repeat(3,1fr);padding:36px 0 44px;gap:36px}.index{font-size:10px;letter-spacing:.12em;font-weight:700;color:var(--muted)}h2{font:700 27px/1.1 var(--heading-font);text-transform:uppercase;margin:15px 0 10px}.archive-intro p{font-size:13px;line-height:1.7;color:var(--muted);max-width:280px;margin:0}footer{border-top:1px solid var(--rule);padding:22px 0;display:flex;justify-content:space-between;gap:15px;color:var(--muted);font-size:10px}footer span:first-child{font-weight:700;letter-spacing:.08em}
+  @media(max-width:900px){main{padding:45px 28px 0}.hero{gap:28px}h1{font-size:60px}.figure-label{padding:18px;font-size:8px}}
+  @media(max-width:600px){main{padding:35px 22px 0}.hero{grid-template-columns:1fr;gap:36px;padding-bottom:36px}h1{font-size:clamp(51px,13vw,72px);margin:24px 0}.intro{font-size:15px}.explore{margin-top:14px}.landscape svg{max-height:320px}.archive-intro{grid-template-columns:1fr;gap:28px;padding:30px 0}.archive-intro>div+div{border-top:1px solid var(--rule);padding-top:26px}footer{flex-direction:column;gap:8px}}
+</style>
