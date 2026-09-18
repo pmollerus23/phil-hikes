@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 // Local deterministic provider fixtures. These tests do NOT validate MapTiler services.
 test.beforeEach(async({page})=>{
  await page.route('https://api.maptiler.com/**',async r=>{
@@ -8,6 +10,15 @@ test.beforeEach(async({page})=>{
   if(url.includes('tiles.json'))return r.fulfill({json:{tilejson:'3.0.0',tiles:['https://api.maptiler.com/fixture/{z}/{x}/{y}.png'],minzoom:0,maxzoom:14,attribution:'Local test fixture'}});
   return r.fulfill({path:'tests/fixtures/flat-dem.png',contentType:'image/png'});
  });
+});
+test('regenerating trip assets keeps them available on the running dev server',async({request})=>{
+  test.skip(test.info().project.name!=='desktop','Run the importer once to avoid concurrent writes.');
+  const files=['index.json','inventory.json','lspp-may-2025-canoe-trip.json'];
+  for(const file of files)expect((await request.get(`/trips/${file}`)).status()).toBe(200);
+  await promisify(execFile)(process.execPath,['--import','tsx','scripts/import-gpx.ts']);
+  for(const file of files)expect((await request.get(`/trips/${file}`)).status()).toBe(200);
+  const detail=await (await request.get('/trips/lspp-may-2025-canoe-trip.json')).json();
+  expect(detail.paths.map((path:{id:string})=>path.id)).toEqual(['rte-3']);
 });
 test('Maine shows one continuous route, its full profile, and all waypoint notes',async({page})=>{
   const inventory=await (await page.request.get('/trips/index.json')).json();
@@ -23,6 +34,27 @@ test('Maine shows one continuous route, its full profile, and all waypoint notes
   await page.getByRole('button',{name:/Sugarloaf Summit.*summit/}).click();
   await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Cool summit.');
   await page.screenshot({path:`test-results/maine-continuous-route-${test.info().project.name}.png`,fullPage:true});
+});
+test('updated trips render their current routes, profiles, and waypoint notes',async({page})=>{
+  const cases=[
+    {id:'dolly-sods-june-2023',max:'1244',waypoints:5,paths:1,waypoint:/Camp Night 3.*camp/,note:'exploding river rock'},
+    {id:'johnson-lake-loop-mt-2024',max:'1295',waypoints:2,paths:1,waypoint:/Night Campsite.*camp/,note:'Beautiful lakeside view'},
+    {id:'lspp-may-2025-canoe-trip',max:'926',waypoints:6,paths:1,waypoint:/Base Camp.*camp/,note:'Ranger Cabin'},
+  ];
+  for(const trip of cases){
+    await page.goto(`/map?trip=${trip.id}`);
+    await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+    await expect(page.getByRole('slider')).toHaveAttribute('max',trip.max);
+    await expect(page.locator('.waypoint-marker')).toHaveCount(trip.waypoints);
+    await expect(page.locator('.data-notes').first().locator('summary')).toContainText(`Source geometry · ${trip.paths} path`);
+    if(trip.id==='lspp-may-2025-canoe-trip'){
+      await expect(page.locator('.trip-stats')).toContainText('12.1 mi');
+      await expect(page.locator('.data-notes').first()).not.toContainText('Fishing Route');
+    }
+    await page.getByRole('button',{name:trip.waypoint}).click();
+    await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText(trip.note);
+    await page.screenshot({path:`test-results/updated-${trip.id}-${test.info().project.name}.png`,fullPage:true});
+  }
 });
 test('real MapLibre canvas, overlays, style switch, terrain control, and profile marker survive UI changes',async({page})=>{
  let demRequests=0;page.on('request',r=>{if(r.url().includes('/fixture/'))demRequests++;});

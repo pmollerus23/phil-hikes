@@ -37,7 +37,7 @@
     "issues": [
       "rte-1-s1: identical point timestamps; not travel timing"
     ],
-    "sha256": "d5bc270a65fdfae4f9eb2114e746469c98a92429025f5588a8e9240ca30b643c"
+    "sha256": "624e5adeb4c55f3d733ede775ddad63f0b548f1aa87916ca8cb0a62937e3301b"
   },
   {
     "id": "dolly-sods-september-2025",
@@ -62,20 +62,22 @@
     "id": "johnson-lake-loop-mt-2024",
     "filename": "johnson-lake-loop-mt-2024.gpx",
     "tracks": 0,
-    "routes": 1,
+    "routes": 2,
     "trackSegments": 0,
-    "routeSegments": 1,
+    "routeSegments": 2,
     "emptySegments": 0,
     "sourceWaypoints": 2,
     "campsites": 1,
     "derivedMarkers": 0,
-    "points": 1250,
-    "elevationPoints": 1250,
-    "timestampPoints": 1250,
+    "points": 2546,
+    "elevationPoints": 2546,
+    "timestampPoints": 2546,
     "issues": [
-      "rte-1-s1: identical point timestamps; not travel timing"
+      "rte-1-s1: identical point timestamps; not travel timing",
+      "rte-2-s1: identical point timestamps; not travel timing",
+      "Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel."
     ],
-    "sha256": "0dbfdbb1d058f526cb8ae45c8cef0ae0664f78d9b062df542b57410cbb70ebb7"
+    "sha256": "0455724e1de1a157f16f287db7cf9920bf8376df88ee848b04661caa51f283e1"
   },
   {
     "id": "little-rock-creek-lake-mt-2024",
@@ -100,22 +102,25 @@
     "id": "lspp-may-2025-canoe-trip",
     "filename": "lspp-may-2025-canoe-trip.gpx",
     "tracks": 0,
-    "routes": 2,
+    "routes": 3,
     "trackSegments": 0,
-    "routeSegments": 2,
+    "routeSegments": 3,
     "emptySegments": 0,
-    "sourceWaypoints": 3,
+    "sourceWaypoints": 6,
     "campsites": 3,
-    "derivedMarkers": 2,
-    "points": 1711,
-    "elevationPoints": 1711,
-    "timestampPoints": 1711,
+    "derivedMarkers": 0,
+    "points": 2638,
+    "elevationPoints": 2638,
+    "timestampPoints": 2638,
     "issues": [
       "rte-1-s1: identical point timestamps; not travel timing",
       "rte-2-s1: identical point timestamps; not travel timing",
+      "rte-3-s1: identical point timestamps; not travel timing",
+      "wpt-2: unrecognized waypoint classification (fish); generic marker used",
+      "wpt-3: unrecognized waypoint classification (fish); generic marker used",
       "Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel."
     ],
-    "sha256": "845efbdb72b79599b3797916547fe90b7c70bd893338c9d5ff74c13b8346c0cc"
+    "sha256": "b8cebc9e6bc83dc01d313e61d2873df35fc9f5bdcd8dabc20e116b39d69d7dc0"
   },
   {
     "id": "maine-august-2026",

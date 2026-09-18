@@ -59,6 +59,34 @@ test('path overrides exclude alternative bounds and endpoints and reject invalid
   assert.throws(()=>parseGpx(xml,'selected.gpx',{pathIds:['rte-2','rte-2']}),/Invalid pathIds/);
   assert.throws(()=>parseGpx(xml,'selected.gpx',{pathIds:['rte-2'],statsPathIds:['rte-1']}),/Invalid statsPathIds/);
 });
+test('updated trip exports publish current route versions and preserve new waypoint data',async()=>{
+  const overrides:Record<string,Override>=JSON.parse(await readFile('data/trip-overrides.json','utf8'));
+  const cases=[
+    {id:'dolly-sods-june-2023',pathIds:['rte-1'],points:[1245],waypoints:5},
+    {id:'johnson-lake-loop-mt-2024',pathIds:['rte-1'],points:[1296],waypoints:2},
+    {id:'lspp-may-2025-canoe-trip',pathIds:['rte-3'],points:[927],waypoints:6},
+  ];
+  for(const expected of cases){
+    const {trip,detail}=parseGpx(await readFile(`gpx_map_data/${expected.id}.gpx`,'utf8'),`${expected.id}.gpx`,overrides[expected.id]);
+    assert.deepEqual(detail.paths.map(path=>path.id),expected.pathIds);
+    assert.deepEqual(detail.paths.map(path=>path.segments.reduce((count,segment)=>count+segment.points.length,0)),expected.points);
+    assert.deepEqual(trip.statsPathIds,expected.pathIds);
+    assert.equal(trip.stats.points,expected.points.reduce((sum,count)=>sum+count,0));
+    assert.equal(trip.overview.features.length,expected.pathIds.length);
+    assert.equal(detail.geojson.features.length,expected.pathIds.length);
+    assert.equal(trip.waypoints.length,expected.waypoints);
+    if(expected.id==='lspp-may-2025-canoe-trip'){
+      assert.ok(!JSON.stringify(detail).includes('Fishing Route'));
+      assert.ok(!JSON.stringify(trip.overview).includes('Fishing Route'));
+      assert.ok(!trip.issues.some(issue=>issue.includes('Multiple planned routes')));
+      assert.equal(trip.waypoints.find(w=>w.name==='Trucks (Out and back)')?.kind,'start-end');
+      assert.equal(trip.waypoints.filter(w=>w.symbol==='fish').length,2);
+      assert.equal(trip.waypoints.find(w=>w.name==='Base Camp')?.description,'Base Camp for the fishing trip on the island where the Ranger Cabin is.');
+    }
+    if(expected.id==='dolly-sods-june-2023')assert.equal(trip.waypoints.find(w=>w.kind==='end')?.id,'wpt-5');
+    if(expected.id==='johnson-lake-loop-mt-2024')assert.equal(trip.waypoints.find(w=>w.kind==='start-end')?.symbol,'car-24');
+  }
+});
 test('tracks, routes, segments and point extensions are preserved without gap bridges',()=>{
  const xml=gpx(`<trk><name>Recorded</name><trkseg>${pt(-73,10)}${pt(-72.999,20)}</trkseg><trkseg>${pt(-110,500)}${pt(-109.999,510)}</trkseg></trk><rte><name>Plan</name><rtept lat="42" lon="-73"><ele>1</ele><extensions><id>abc</id></extensions></rtept><rtept lat="42.01" lon="-73"><ele>10</ele></rtept></rte>`);
  const {trip,detail}=parseGpx(xml,'test.gpx');
@@ -102,5 +130,5 @@ test('all 12 exports reconcile with independently counted source structures and 
  const asset=JSON.parse(await readFile(`public/trips/${result.trip.id}.json`,'utf8'));assert.deepEqual(asset,result.detail);
  routes+=inv.routes;points+=inv.points;wps+=inv.sourceWaypoints;camps+=inv.campsites;
  }
- assert.equal(routes,23);assert.equal(points,29494);assert.equal(wps,39);assert.equal(camps,26);
+ assert.equal(routes,25);assert.equal(points,31717);assert.equal(wps,42);assert.equal(camps,26);
 });
