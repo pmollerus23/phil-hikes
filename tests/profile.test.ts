@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {profileData} from '../src/features/map/Profile';import {parseGpx} from '../scripts/gpx';
+test('profile associates full-resolution points with correct segments and times without bridging gaps',()=>{
+ const xml='<gpx><trk><trkseg><trkpt lat="40" lon="-73"><ele>10</ele><time>2020-01-01T00:00:00Z</time></trkpt><trkpt lat="40" lon="-72.999"><ele>20</ele><time>2020-01-01T00:01:00Z</time></trkpt></trkseg><trkseg><trkpt lat="40" lon="-110"><ele>1000</ele><time>2020-01-02T00:00:00Z</time></trkpt><trkpt lat="40" lon="-109.999"/></trkseg></trk><rte><rtept lat="41" lon="-72"/></rte></gpx>';
+ const {detail}=parseGpx(xml,'test.gpx');const data=profileData(detail,['trk-1']);assert.equal(data.length,2);assert.equal(data[1].id,'trk-1-s2');assert.equal(data[1].points[0].point.time,'2020-01-02T00:00:00Z');assert.equal(data[1].points[0].distance,data[0].points[1].distance);assert.ok(data[1].points[1].distance<180);assert.equal(data[1].points[1].point.elevation,null);assert.equal(data[1].points[1].point.time,null);
+});

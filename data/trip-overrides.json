@@ -1,0 +1,14 @@
+{
+  "beartown-tyringham-solo-1-nighter-july-2026": {"title":"Beartown to Tyringham", "region":"Massachusetts", "notes":"First solo overnight. Two route plans are preserved; the first extends beyond the marked starting point. Combined route distance may exceed the actual trip."},
+  "dolly-sods-june-2023": {"title":"Dolly Sods · summer", "region":"West Virginia"},
+  "dolly-sods-september-2025": {"title":"Dolly Sods · fall", "region":"West Virginia"},
+  "johnson-lake-loop-mt-2024": {"title":"Johnson Lake loop", "region":"Montana"},
+  "little-rock-creek-lake-mt-2024": {"title":"Little Rock Creek Lake", "region":"Montana"},
+  "lspp-may-2025-canoe-trip": {"title":"LSPP canoe trip", "region":"Ontario · location to confirm", "tags":["canoe"], "notes":"The supplied coordinates appear to be in Ontario, Canada, despite the US-only brief. Both portage and approximate fishing routes are preserved; their combined distance is not measured travel."},
+  "maine-august-2026": {"title":"Rangeley to Flagstaff", "region":"Maine", "statsPathIds":["rte-2"], "statsLabel":"Main itinerary", "notes":"Summary and profile use the full Rangeley–Flagstaff itinerary to avoid adding overlapping day plans. All nine source routes remain available on the map, including one empty route. The description says August 3–13; exact traveled dates are unconfirmed."},
+  "mt-everret-jug-end-loop-2020": {"title":"Mount Everett & Jug End", "region":"Massachusetts"},
+  "otter-creek-august-2025": {"title":"Otter Creek", "region":"West Virginia"},
+  "shenandoah": {"title":"Shenandoah", "region":"Virginia"},
+  "vermont-june-2026": {"title":"Stratton & Bourne Ponds", "region":"Vermont"},
+  "vermud-2021": {"title":"Vermud · the Long Trail", "region":"Vermont", "dates":{"label":"July 2021", "source":"Route description and campsite notes; exact range unknown"}}
+}

@@ -1,0 +1,32 @@
+# Dependencies and Astro build/cache output
+node_modules/
+dist/
+.astro/
+*.tsbuildinfo
+
+# Local environment variables (keep the setup template)
+.env
+.env.*
+!.env.example
+
+# Test output and coverage
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/
+
+# Temporary GPX import staging (keep original GPX and generated trip assets)
+/public/.trips-import/
+
+# Local logs
+*.log
+
+# OS and editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Agent artifacts
+AGENTS.md

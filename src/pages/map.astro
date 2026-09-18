@@ -1,0 +1,5 @@
+---
+import Shell from '../layouts/Shell.astro';
+import MapApp from '../features/map/MapApp';
+---
+<Shell title="Trip map · Phil’s field notes" map><MapApp client:only="react"><p slot="fallback">Loading the trip archive…</p></MapApp><noscript>Enable JavaScript to explore the interactive map. <a href="/trips/inventory.json">Trip inventory</a></noscript></Shell>

@@ -1,0 +1,244 @@
+[
+  {
+    "id": "beartown-tyringham-solo-1-nighter-july-2026",
+    "filename": "beartown-tyringham-solo-1-nighter-july-2026.gpx",
+    "tracks": 0,
+    "routes": 2,
+    "trackSegments": 0,
+    "routeSegments": 2,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 1,
+    "derivedMarkers": 0,
+    "points": 3818,
+    "elevationPoints": 3818,
+    "timestampPoints": 3818,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing",
+      "rte-2-s1: identical point timestamps; not travel timing",
+      "Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel."
+    ],
+    "sha256": "759c9fc032493cdf77548159721f93f131c404ddb0f89037c8248105a07f4c2f"
+  },
+  {
+    "id": "dolly-sods-june-2023",
+    "filename": "dolly-sods-june-2023.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 5,
+    "campsites": 3,
+    "derivedMarkers": 0,
+    "points": 1245,
+    "elevationPoints": 1245,
+    "timestampPoints": 1245,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "d5bc270a65fdfae4f9eb2114e746469c98a92429025f5588a8e9240ca30b643c"
+  },
+  {
+    "id": "dolly-sods-september-2025",
+    "filename": "dolly-sods-september-2025.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 1,
+    "campsites": 1,
+    "derivedMarkers": 2,
+    "points": 446,
+    "elevationPoints": 446,
+    "timestampPoints": 446,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "2fb13548eabca5ac661e6b099d465116049290692306bc3b8c71102410818f24"
+  },
+  {
+    "id": "johnson-lake-loop-mt-2024",
+    "filename": "johnson-lake-loop-mt-2024.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 2,
+    "campsites": 1,
+    "derivedMarkers": 0,
+    "points": 1250,
+    "elevationPoints": 1250,
+    "timestampPoints": 1250,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "0dbfdbb1d058f526cb8ae45c8cef0ae0664f78d9b062df542b57410cbb70ebb7"
+  },
+  {
+    "id": "little-rock-creek-lake-mt-2024",
+    "filename": "little-rock-creek-lake-mt-2024.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 1,
+    "campsites": 1,
+    "derivedMarkers": 2,
+    "points": 769,
+    "elevationPoints": 769,
+    "timestampPoints": 769,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "3455fd185e4ae2479724ac2bc15a7c79623a9d7a98ece25fb8f54a7ed977916b"
+  },
+  {
+    "id": "lspp-may-2025-canoe-trip",
+    "filename": "lspp-may-2025-canoe-trip.gpx",
+    "tracks": 0,
+    "routes": 2,
+    "trackSegments": 0,
+    "routeSegments": 2,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 3,
+    "derivedMarkers": 2,
+    "points": 1711,
+    "elevationPoints": 1711,
+    "timestampPoints": 1711,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing",
+      "rte-2-s1: identical point timestamps; not travel timing",
+      "Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel."
+    ],
+    "sha256": "845efbdb72b79599b3797916547fe90b7c70bd893338c9d5ff74c13b8346c0cc"
+  },
+  {
+    "id": "maine-august-2026",
+    "filename": "maine-august-2026.gpx",
+    "tracks": 0,
+    "routes": 9,
+    "trackSegments": 0,
+    "routeSegments": 9,
+    "emptySegments": 1,
+    "sourceWaypoints": 10,
+    "campsites": 6,
+    "derivedMarkers": 0,
+    "points": 7349,
+    "elevationPoints": 7349,
+    "timestampPoints": 7349,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing",
+      "rte-2-s1: identical point timestamps; not travel timing",
+      "rte-3-s1: identical point timestamps; not travel timing",
+      "rte-4-s1: identical point timestamps; not travel timing",
+      "rte-5-s1: identical point timestamps; not travel timing",
+      "rte-6-s1: identical point timestamps; not travel timing",
+      "rte-7-s1: identical point timestamps; not travel timing",
+      "rte-8-s1: identical point timestamps; not travel timing",
+      "rte-9: empty or single-point segment preserved; cannot draw a line",
+      "Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel."
+    ],
+    "sha256": "d274938228746958871b07e03da5e3b092a00727296613866f04c3b67439f1cc"
+  },
+  {
+    "id": "mt-everret-jug-end-loop-2020",
+    "filename": "mt-everret-jug-end-loop-2020.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 2,
+    "campsites": 1,
+    "derivedMarkers": 0,
+    "points": 1438,
+    "elevationPoints": 1438,
+    "timestampPoints": 1438,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "3f4916cf6aa64e56e453f0f22233d84f54b954ad387bd861e75edd0bdde44198"
+  },
+  {
+    "id": "otter-creek-august-2025",
+    "filename": "otter-creek-august-2025.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 2,
+    "derivedMarkers": 0,
+    "points": 677,
+    "elevationPoints": 677,
+    "timestampPoints": 677,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "dd78a1dada0aa57e2b1e410c9354214dc4c04b30f0aa51c8f423d927eed8dad3"
+  },
+  {
+    "id": "shenandoah",
+    "filename": "shenandoah.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 2,
+    "derivedMarkers": 0,
+    "points": 2532,
+    "elevationPoints": 2532,
+    "timestampPoints": 2532,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing",
+      "Trip date unavailable; route and waypoint creation times are not used as trip dates."
+    ],
+    "sha256": "4a63fbf605f316a36b07689b3afcfbb1b6e2a2c76c660b161a82eb2223132304"
+  },
+  {
+    "id": "vermont-june-2026",
+    "filename": "vermont-june-2026.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 2,
+    "derivedMarkers": 0,
+    "points": 2294,
+    "elevationPoints": 2294,
+    "timestampPoints": 2294,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "6e088405905ae4e8e3587a6438e4824f4645f1bc25c2527d3beaaa85573e5f2b"
+  },
+  {
+    "id": "vermud-2021",
+    "filename": "vermud-2021.gpx",
+    "tracks": 0,
+    "routes": 1,
+    "trackSegments": 0,
+    "routeSegments": 1,
+    "emptySegments": 0,
+    "sourceWaypoints": 3,
+    "campsites": 3,
+    "derivedMarkers": 2,
+    "points": 2524,
+    "elevationPoints": 2524,
+    "timestampPoints": 2524,
+    "issues": [
+      "rte-1-s1: identical point timestamps; not travel timing"
+    ],
+    "sha256": "a908b78a86012314ea2f32c1c982247f69f5973757a3116af09f06462bb86e11"
+  }
+]

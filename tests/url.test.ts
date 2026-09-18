@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {tripFromUrl,urlForTrip} from '../src/features/map/url';
+test('direct and unknown links, encoded IDs, absent selection',()=>{assert.deepEqual(tripFromUrl('/map?trip=a',['a']),{id:'a',unknown:false});assert.deepEqual(tripFromUrl('/map?trip=bad',['a']),{id:null,unknown:true});assert.deepEqual(tripFromUrl('/map',['a']),{id:null,unknown:false});assert.equal(tripFromUrl('/map?trip=%61',['a']).id,'a');});
+test('selection keeps unrelated parameters/hash and clears only trip',()=>{assert.equal(urlForTrip('/map?foo=bar#place','a'),'/map?foo=bar&trip=a#place');assert.equal(urlForTrip('/map?trip=a&foo=bar#place',null),'/map?foo=bar#place');});
