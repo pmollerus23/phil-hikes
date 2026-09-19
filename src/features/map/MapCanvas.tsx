@@ -7,7 +7,7 @@ maplibregl.setWorkerUrl(workerUrl);
 import type { Bounds, Point, Trip, TripDetail, Waypoint } from './model';
 import { createTopoStyle, emptyTopoStyle } from './topoStyle';
 import WaypointIcon from './WaypointIcon';
-import TripFlag from './TripFlag';
+import TripFlag, { tripFlagWidth } from './TripFlag';
 import MapCrosshair from './MapCrosshair';
 import { overlappingTripIds, shouldGroupWaypoints, tripAreasOverlap } from './waypointGrouping';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -49,8 +49,9 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   if(!map.current||!bounds) return;
   const mobile=window.matchMedia('(max-width: 700px)').matches;
   const height=map.current.getContainer().clientHeight;
-  map.current.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]],{padding:mobile?{top:85,left:35,right:80,bottom:panelOpen?Math.min(height*.49+30,height-170):100}:{top:90,bottom:65,left:panelOpen?390:65,right:80},maxZoom:14,duration:duration()});
- },[bounds,panelOpen]);
+  const labelPadding=selected?0:Math.ceil(Math.max(0,...trips.map(trip=>tripFlagWidth(trip.mapLabel)))/2)+12;
+  map.current.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]],{padding:mobile?{top:selected?85:100,left:Math.max(35,labelPadding),right:selected?80:68+labelPadding,bottom:panelOpen?Math.min(height*.49+30,height-170):100}:{top:90,bottom:65,left:panelOpen?358+Math.max(32,labelPadding):Math.max(65,labelPadding),right:selected?80:68+labelPadding},maxZoom:14,duration:duration()});
+ },[bounds,panelOpen,selected,trips]);
  const frameLatest=useRef(frame);frameLatest.current=frame;
  const previousSelection=useRef(selected?.id);
  useEffect(()=>{
@@ -87,7 +88,7 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   const id=e.features?.[0]?.properties?.tripId;
   if(typeof id==='string')onSelect(id);
   else if(selected)onSelect(null);
- }} interactiveLayerIds={['archive-hit','detail-hit']} cursor="crosshair" canvasContextAttributes={{antialias:true}}>
+ }} interactiveLayerIds={['archive-hit','detail-hit']} cursor="none" canvasContextAttributes={{antialias:true}}>
   <Source id="terrain-dem" type="raster-dem" url={`https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${encodeURIComponent(apiKey)}`} tileSize={256}/>
   <Source id="archive" type="geojson" data={overview}>
    <Layer id="archive-casing" type="line" paint={{'line-color':'#fff9e9','line-width':6,'line-opacity':selected?['case',['==',['get','tripId'],selected.id],.9,.18]:.9}}/>
@@ -99,7 +100,7 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
    <Layer id="detail-line" type="line" paint={{'line-color':'#ff5f00','line-width':4}}/>
    <Layer id="detail-hit" type="line" paint={{'line-width':22,'line-opacity':0}}/>
   </Source>
-  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=><Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}`} aria-label={`${w.name} · ${t.title}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} /></button></Marker>))}
+  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=><Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}`} aria-label={`${w.name} · ${t.title}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} /></button></Marker>))}
   <MapCrosshair map={map} ready={ready} satellite={style==='satellite'} />
   <NavigationControl position="top-right" showCompass={true}/><ScaleControl position="bottom-left" unit="imperial"/><AttributionControl position="bottom-right" compact={false}/>
  </Map>;

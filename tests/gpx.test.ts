@@ -111,8 +111,8 @@ test('haversine distance and segment totals never count artificial connections',
 });
 test('stable filename IDs survive title/date/classification/coordinate overrides',()=>{
  const xml=gpx('<wpt lat="40" lon="-73"><name>Unknown</name><sym>custom</sym></wpt>');
- const a=parseGpx(xml,'trip-2021.gpx');const b=parseGpx(xml,'trip-2021.gpx',{title:'Renamed',dates:{label:'July 2021',source:'owner'},waypoints:{'wpt-1':{kind:'camp',lat:41}}});
- assert.equal(a.trip.id,b.trip.id);assert.equal(b.trip.id,stableId('trip-2021.gpx'));assert.equal(b.trip.title,'Renamed');assert.equal(b.trip.dates.label,'July 2021');assert.equal(b.trip.waypoints[0].kind,'camp');assert.equal(b.trip.waypoints[0].lat,41);
+ const a=parseGpx(xml,'trip-2021.gpx');const b=parseGpx(xml,'trip-2021.gpx',{title:'Renamed',mapLabel:'Short name 2021',dates:{label:'July 2021',source:'owner'},waypoints:{'wpt-1':{kind:'camp',lat:41}}});
+ assert.equal(a.trip.id,b.trip.id);assert.equal(b.trip.id,stableId('trip-2021.gpx'));assert.equal(a.trip.mapLabel,'Trip 2021');assert.equal(b.trip.title,'Renamed');assert.equal(b.trip.mapLabel,'Short name 2021');assert.equal(b.trip.dates.label,'July 2021');assert.equal(b.trip.waypoints[0].kind,'camp');assert.equal(b.trip.waypoints[0].lat,41);
  assert.throws(()=>parseGpx(xml,'x.gpx',{statsPathIds:['missing']}));assert.throws(()=>parseGpx(xml,'x.gpx',{waypoints:{missing:{kind:'camp'}}}));
 });
 test('malformed coordinates/XML fail explicitly and invalid optional values report issues',()=>{

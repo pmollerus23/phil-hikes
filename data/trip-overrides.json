@@ -4,11 +4,11 @@
   "dolly-sods-september-2025": {"title":"Dolly Sods · fall", "region":"West Virginia"},
   "johnson-lake-loop-mt-2024": {"title":"Johnson Lake loop", "region":"Montana", "pathIds":["rte-1"]},
   "little-rock-creek-lake-mt-2024": {"title":"Little Rock Creek Lake", "region":"Montana"},
-  "lspp-may-2025-canoe-trip": {"title":"LSPP canoe trip", "region":"Ontario · location to confirm", "tags":["canoe"], "pathIds":["rte-3"], "statsLabel":"Portage route distance", "waypoints":{"wpt-1":{"kind":"start-end"}}, "notes":"Portage route for the LSPP canoe trip."},
+  "lspp-may-2025-canoe-trip": {"title":"LSPP canoe trip", "mapLabel":"LSPP 2025", "region":"Ontario · location to confirm", "tags":["canoe"], "pathIds":["rte-3"], "statsLabel":"Portage route distance", "waypoints":{"wpt-1":{"kind":"start-end"}}, "notes":"Portage route for the LSPP canoe trip."},
   "maine-august-2026": {"title":"Rangeley to Flagstaff", "region":"Maine", "pathIds":["rte-10"], "statsPathIds":["rte-10"], "statsLabel":"Route distance", "notes":"A continuous Appalachian Trail route from Rangeley to Flagstaff."},
   "mt-everret-jug-end-loop-2020": {"title":"Mount Everett & Jug End", "region":"Massachusetts"},
   "otter-creek-august-2025": {"title":"Otter Creek", "region":"West Virginia"},
   "shenandoah": {"title":"Shenandoah", "region":"Virginia"},
   "vermont-june-2026": {"title":"Stratton & Bourne Ponds", "region":"Vermont"},
-  "vermud-2021": {"title":"Vermud · the Long Trail", "region":"Vermont", "dates":{"label":"July 2021", "source":"Route description and campsite notes; exact range unknown"}}
+  "vermud-2021": {"title":"Vermud · the Long Trail", "mapLabel":"Vermud 2021", "region":"Vermont", "dates":{"label":"July 2021", "source":"Route description and campsite notes; exact range unknown"}}
 }

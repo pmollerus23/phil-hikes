@@ -86,6 +86,33 @@ test('unsupported WebGL retains the trip archive',async({page})=>{
  await page.goto('/map?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
 });
 
+test('trip flags show identifying titles and years',async({page,isMobile})=>{
+  const inventory=await (await page.request.get('/trips/index.json')).json();
+  const trips=inventory.filter((trip:{id:string})=>['lspp-may-2025-canoe-trip','vermud-2021'].includes(trip.id));
+  await page.route('**/trips/index.json',route=>route.fulfill({json:trips}));
+  await page.goto('/map');
+  const lspp=page.getByRole('button',{name:'Trip · LSPP canoe trip',exact:true});
+  const vermud=page.getByRole('button',{name:'Trip · Vermud · the Long Trail',exact:true});
+  await expect(lspp).toBeVisible();
+  await expect(vermud).toBeVisible();
+  await expect(lspp.locator('.trip-marker-label')).toHaveText('LSPP 2025');
+  await expect(vermud.locator('.trip-marker-label')).toHaveText('Vermud 2021');
+  const viewport=page.viewportSize()!;
+  const controls=(await page.locator('.maplibregl-ctrl-top-right').boundingBox())!;
+  for(const flag of [lspp,vermud]){
+    const box=(await flag.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x+box.width).toBeLessThanOrEqual(viewport.width);
+    const overlapsControls=box.x<controls.x+controls.width&&box.x+box.width>controls.x&&box.y<controls.y+controls.height&&box.y+box.height>controls.y;
+    expect(overlapsControls).toBe(false);
+  }
+  if(!isMobile){
+    await lspp.hover();
+    await expect.poll(()=>lspp.locator('.trip-marker-surface').evaluate(element=>getComputedStyle(element).transform)).not.toBe('none');
+  }
+  await page.screenshot({path:`test-results/trip-title-flags-${test.info().project.name}.png`,fullPage:true});
+});
+
 test('clearing selection restores other trips and gently zooms out around the current area', async({page,isMobile}) => {
   const inventory = await (await page.request.get('/trips/index.json')).json();
   const trips = inventory.filter((trip: {id:string}) => trip.id.startsWith('dolly-sods-') || trip.id==='little-rock-creek-lake-mt-2024');
@@ -96,6 +123,7 @@ test('clearing selection restores other trips and gently zooms out around the cu
   const distant = page.getByRole('button',{name:/ · Little Rock Creek Lake$/});
   await expect(page.getByRole('slider')).toBeVisible();
   await expect(summer).toBeVisible();
+  await expect(summer.locator('.trip-marker-label')).toHaveText('Dolly Sods · summer 2023');
   await expect(distant).toHaveCount(0);
   await page.locator('.waypoint-list button').first().click();
   await expect(page.getByRole('region',{name:'Waypoint details'})).toBeVisible();
@@ -162,6 +190,8 @@ test('zooming out groups each trip and its marker restores individual waypoints'
  for(let i=0;i<6;i++) await page.getByRole('button',{name:'Zoom out',exact:true}).click();
  const trip=page.getByRole('button',{name:'Trip · Little Rock Creek Lake',exact:true});
  await expect(trip).toBeVisible();
+ await expect(trip).toHaveAttribute('aria-pressed','true');
+ await expect(trip.locator('.trip-marker-label')).toHaveText('Little Rock Creek Lake 2024');
  await expect(page.locator('.waypoint-marker')).toHaveCount(0);
  await page.screenshot({path:`test-results/grouped-map-${test.info().project.name}.png`,fullPage:true});
  await trip.click();
@@ -197,6 +227,13 @@ test('crosshair follows the map pointer without intercepting controls or touch',
  }).toBe(true);
  await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x}px`);
  await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-y'))).toBe(`${y}px`);
+ await expect(canvas).toHaveCSS('cursor','none');
+ const coordinates=page.locator('.crosshair-coordinate');
+ await expect(coordinates).toHaveText(/^\d{1,2}\.\d{3}° [NS] · \d{1,3}\.\d{3}° [EW]$/);
+ const firstCoordinates=await coordinates.textContent();
+ await page.mouse.move(bounds.x+x+20,bounds.y+y+10);
+ await expect.poll(()=>coordinates.textContent()).not.toBe(firstCoordinates);
+ await page.mouse.move(bounds.x+x,bounds.y+y);
  const horizontal=(await page.locator('.crosshair-horizontal').boundingBox())!;
  const vertical=(await page.locator('.crosshair-vertical').boundingBox())!;
  expect(horizontal.width).toBe(bounds.width);

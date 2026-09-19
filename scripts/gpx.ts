@@ -96,7 +96,10 @@ export function parseGpx(xml: string, filename: string, override: Override = {})
  const dates=override.dates??{label:year?`${month?month[0].toUpperCase()+month.slice(1)+' ':''}${year}`:'Date unknown',source:year?'filename (year/month precision)':'unavailable'};
  if(!year && !override.dates) issues.push('Trip date unavailable; route and waypoint creation times are not used as trip dates.');
  if(!paths.length) issues.push('No tracks or routes');
- const trip:Trip={id,title:override.title??id.split('-').map(s=>s[0]?.toUpperCase()+s.slice(1)).join(' '),dates,region:override.region,tags:override.tags,detailUrl:`/trips/${id}.json`,bounds,stats:sumStats(relevant.flatMap(p=>p.segments.map(s=>s.stats))),statsPathIds,statsLabel:override.statsLabel??(relevant.some(p=>p.kind==='track')?'Recorded tracks':'Mapped routes'),overview:geometry(paths,id,true),waypoints,notes:override.notes,issues};
+ const title=override.title??id.split('-').map(s=>s[0]?.toUpperCase()+s.slice(1)).join(' ');
+ const displayYear=dates.label.match(/\b(?:19|20)\d{2}\b/)?.[0];
+ const mapLabel=override.mapLabel??(displayYear&&!title.includes(displayYear)?`${title} ${displayYear}`:title);
+ const trip:Trip={id,title,mapLabel,dates,region:override.region,tags:override.tags,detailUrl:`/trips/${id}.json`,bounds,stats:sumStats(relevant.flatMap(p=>p.segments.map(s=>s.stats))),statsPathIds,statsLabel:override.statsLabel??(relevant.some(p=>p.kind==='track')?'Recorded tracks':'Mapped routes'),overview:geometry(paths,id,true),waypoints,notes:override.notes,issues};
  const detail:TripDetail={schemaVersion:1,id,paths,geojson:geometry(paths,id),sourceMetadata:root.metadata??null,sourceExtensions:root.extensions??null};
  const ps=sourcePaths.flatMap(p=>p.segments.flatMap(s=>s.points));
  const inventoryIssues=[...new Set([...sourcePathIssues,...issues,...(sourcePaths.filter(p=>p.kind==='route').length>1?[multipleRoutesIssue]:[])])];

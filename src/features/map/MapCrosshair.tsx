@@ -7,10 +7,12 @@ export default function MapCrosshair({ map, ready, satellite }: {
   satellite: boolean;
 }) {
   const overlay = useRef<HTMLDivElement>(null);
+  const coordinates = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    if (!ready || !map.current || !overlay.current) return;
+    if (!ready || !map.current || !overlay.current || !coordinates.current) return;
     const canvas = map.current.getCanvas();
     const element = overlay.current;
+    const readout = coordinates.current;
     let frame = 0;
     let x = 0;
     let y = 0;
@@ -33,6 +35,12 @@ export default function MapCrosshair({ map, ready, satellite }: {
         frame = 0;
         element.style.setProperty('--cursor-x', `${x}px`);
         element.style.setProperty('--cursor-y', `${y}px`);
+        const location = map.current!.unproject([x, y]);
+        const latitude = `${Math.abs(location.lat).toFixed(3)}° ${location.lat >= 0 ? 'N' : 'S'}`;
+        const longitude = `${Math.abs(location.lng).toFixed(3)}° ${location.lng >= 0 ? 'E' : 'W'}`;
+        readout.textContent = `${latitude} · ${longitude}`;
+        readout.classList.toggle('coordinate-left', x > bounds.width - 170);
+        readout.classList.toggle('coordinate-above', y > bounds.height - 70);
         element.hidden = false;
       });
     };
@@ -61,5 +69,6 @@ export default function MapCrosshair({ map, ready, satellite }: {
   return <div ref={overlay} className={`map-crosshair${satellite ? ' map-crosshair-satellite' : ''}`} hidden aria-hidden="true">
     <span className="crosshair-horizontal" />
     <span className="crosshair-vertical" />
+    <span ref={coordinates} className="crosshair-coordinate" />
   </div>;
 }

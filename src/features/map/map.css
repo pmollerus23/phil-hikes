@@ -22,16 +22,26 @@
 .crosshair-horizontal,.crosshair-vertical{position:absolute;left:0;top:0;pointer-events:none}
 .crosshair-horizontal{width:100%;height:1px;transform:translateY(var(--cursor-y));background:linear-gradient(to right,currentColor calc(var(--cursor-x) - 6px),transparent calc(var(--cursor-x) - 6px),transparent calc(var(--cursor-x) + 6px),currentColor calc(var(--cursor-x) + 6px))}
 .crosshair-vertical{width:1px;height:100%;transform:translateX(var(--cursor-x));background:linear-gradient(to bottom,currentColor calc(var(--cursor-y) - 6px),transparent calc(var(--cursor-y) - 6px),transparent calc(var(--cursor-y) + 6px),currentColor calc(var(--cursor-y) + 6px))}
-@media(hover:hover){.maplibregl-canvas:active{cursor:grabbing!important}}
+.crosshair-coordinate{--coordinate-x:12px;--coordinate-y:12px;position:absolute;left:var(--cursor-x);top:var(--cursor-y);transform:translate(var(--coordinate-x),var(--coordinate-y));padding:5px 7px;border:1px solid #17171724;background:#ffffffc7;box-shadow:0 3px 12px #00000012;backdrop-filter:blur(6px);color:#171717b8;font:600 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.065em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.crosshair-coordinate.coordinate-left{--coordinate-x:calc(-100% - 12px)}
+.crosshair-coordinate.coordinate-above{--coordinate-y:calc(-100% - 12px)}
+.map-crosshair-satellite .crosshair-coordinate{border-color:#ffffff4a;background:#10191ab8;color:#ffffffe0;box-shadow:0 3px 14px #0005;text-shadow:0 1px 2px #000}
+@media(hover:hover){.maplibregl-canvas,.maplibregl-canvas:active{cursor:none!important}}
 
-/* Fine survey-label frame and leader anchored to the route. */
-.trip-marker{display:block;width:64px;height:56px;padding:0;border:0;background:transparent;color:var(--ink);cursor:pointer}
-.trip-marker svg{display:block;width:100%;height:100%;overflow:visible}
-.trip-marker-stem{fill:none;stroke:currentColor;stroke-width:.75;opacity:.65}
-.trip-marker-frame{fill:#ffffffdc;stroke:currentColor;stroke-opacity:.35;stroke-width:.75}
-.trip-marker-brackets{fill:none;stroke:currentColor;stroke-width:1}
-.trip-marker-accent{fill:none;stroke:var(--accent);stroke-width:1}
-.trip-marker-anchor{fill:var(--accent)}
-.trip-marker text{fill:currentColor;font:700 8px Helvetica,Arial,sans-serif;letter-spacing:1.4px}
-.trip-marker:hover{color:var(--accent)}.trip-marker:hover .trip-marker-frame{fill:#fff8f2;stroke-opacity:.8}
-.trip-marker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* A quiet glass label with a map-anchored light trace. */
+.trip-marker{position:relative;display:block;height:56px;padding:0;border:0;background:transparent;color:var(--ink);cursor:pointer;isolation:isolate;pointer-events:none}
+.trip-marker-surface{position:absolute;inset:1px 0 auto;height:30px;display:grid;place-items:center;overflow:hidden;border:1px solid #17171730;background:linear-gradient(110deg,#ffffffc7,#f8ffffa8 62%,#fff5edb8);box-shadow:0 4px 14px #0000000d;backdrop-filter:blur(7px) saturate(1.2);pointer-events:auto;transition:color 180ms ease,border-color 180ms ease,background 180ms ease,box-shadow 180ms ease,transform 180ms ease}
+.trip-marker-surface::before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,#61d8e51f 42%,#ff790024 55%,transparent 72%);transform:translateX(-115%);transition:transform 520ms cubic-bezier(.2,.7,.2,1)}
+.trip-marker-surface::after{content:"";position:absolute;inset:0;border-top:1px solid #ffffffb8;box-shadow:inset 0 -1px #61d8e51c;pointer-events:none}
+.trip-marker-label{position:relative;z-index:1;padding:0 8px;font:700 7.5px/1 Helvetica,Arial,sans-serif;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px #fff}
+.trip-marker-tether{position:absolute;left:50%;top:31px;width:1px;height:21px;background:linear-gradient(#17171766,#61d8e565 72%,transparent);transform-origin:top;transition:height 180ms ease,opacity 180ms ease}
+.trip-marker-anchor{position:absolute;left:calc(50% - 2px);bottom:0;width:4px;height:4px;border:1px solid #ff7900b8;border-radius:50%;background:#fff9;box-shadow:0 0 0 2px #ff790018,0 0 9px #61d8e568;transition:background 180ms ease,box-shadow 180ms ease,transform 180ms ease}
+.trip-marker:hover .trip-marker-surface,.trip-marker:focus-visible .trip-marker-surface{color:#10191a;border-color:#61cbd1a8;background:linear-gradient(110deg,#ffffffdc,#effdffd1 58%,#fff4ebd1);box-shadow:0 5px 20px #49cbd02e,0 0 0 1px #ff790021;transform:translateY(-2px)}
+.trip-marker:hover .trip-marker-surface::before,.trip-marker:focus-visible .trip-marker-surface::before{transform:translateX(115%)}
+.trip-marker:hover .trip-marker-tether,.trip-marker:focus-visible .trip-marker-tether{height:23px;opacity:.9}
+.trip-marker:hover .trip-marker-anchor,.trip-marker:focus-visible .trip-marker-anchor{background:var(--accent);box-shadow:0 0 0 3px #ff79001f,0 0 12px #61d8e594;transform:scale(1.15)}
+.trip-marker[data-selected=true] .trip-marker-surface{color:#10191a;border-color:#ff790080;background:linear-gradient(110deg,#ffffffd6,#effdffd2 50%,#fff0e5d4);box-shadow:0 4px 18px #61d8e538,0 0 0 1px #ff79001c;animation:trip-hologram-pulse 2.8s ease-in-out infinite}
+.trip-marker[data-selected=true] .trip-marker-anchor{background:var(--accent);box-shadow:0 0 0 3px #ff790020,0 0 12px #61d8e58c}
+.trip-marker:active .trip-marker-surface{transform:translateY(0) scale(.98)}
+.trip-marker:focus-visible{outline:0}
+@keyframes trip-hologram-pulse{0%,100%{box-shadow:0 4px 16px #61d8e526,0 0 0 1px #ff790017}50%{box-shadow:0 5px 22px #61d8e54a,0 0 0 1px #ff79002b}}
