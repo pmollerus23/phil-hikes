@@ -7,30 +7,44 @@ export const TRIP_FLAG_HEIGHT = 28;
 export const DEFAULT_TRIP_FLAG_OFFSET: TripFlagOffset = { x: 0, y: -34 };
 export const MAX_TRIP_FLAG_REACH = 120;
 
+/** Zoom at or above which callouts render at full size. Archive/continent views sit below this. */
+export const TRIP_FLAG_FULL_SIZE_ZOOM = 5;
+/** Smallest rendered callout scale. Keeps far-out archive labels usable instead of shrinking to nothing. */
+export const TRIP_FLAG_MIN_SCALE = 0.6;
+
+/**
+ * Zoom-dependent callout scale. Full size at/above the threshold, then shrinking
+ * gradually as the user zooms out so labels stop dominating far-out views.
+ */
+export function tripFlagScale(zoom: number): number {
+  if (!Number.isFinite(zoom) || zoom >= TRIP_FLAG_FULL_SIZE_ZOOM) return 1;
+  return Math.min(1, Math.max(TRIP_FLAG_MIN_SCALE, 1 - (TRIP_FLAG_FULL_SIZE_ZOOM - zoom) * 0.15));
+}
+
 const GAP = 7;
 const VIEWPORT_MARGIN = 8;
 
-function candidates(width: number, preferred?: TripFlagOffset): TripFlagOffset[] {
-  const side = width / 2 + 18;
+function candidates(scaledWidth: number, scale: number, preferred?: TripFlagOffset): TripFlagOffset[] {
+  const side = scaledWidth / 2 + 18;
+  // Leaders always rise north from the route pin: labels sit above their anchor
+  // and stack vertically when routes cluster. Straight-above comes first so a
+  // centered label gets a plain vertical pole; side positions add the 90-degree
+  // elbow along the label's bottom edge.
   const positions = [
-    ...(preferred ? [{ x: preferred.x, y: preferred.y }] : []),
+    ...(preferred && preferred.y < 0 ? [{ x: preferred.x, y: preferred.y }] : []),
     DEFAULT_TRIP_FLAG_OFFSET,
-    { x: -side, y: -24 },
-    { x: side, y: -24 },
-    { x: 0, y: 34 },
-    { x: -side, y: 18 },
-    { x: side, y: 18 },
-    { x: 0, y: -68 },
-    { x: -side, y: -58 },
-    { x: side, y: -58 },
-    { x: 0, y: 68 },
-    { x: -side, y: 56 },
-    { x: side, y: 56 },
+    { x: -side, y: -34 },
+    { x: side, y: -34 },
+    { x: 0, y: -76 },
+    { x: -side, y: -76 },
+    { x: side, y: -76 },
+    { x: 0, y: -118 },
   ];
-  const horizontalLimit = Math.min(160, Math.max(120, width));
-  for (let y = -105; y <= 105; y += 15) {
+  const horizontalLimit = Math.min(160, Math.max(120, scaledWidth));
+  const scaledHeight = TRIP_FLAG_HEIGHT * scale;
+  for (let y = -115; y <= -30; y += 15) {
     for (let x = -horizontalLimit; x <= horizontalLimit; x += 20) {
-      if (Math.abs(x) < width / 2 + 12 && Math.abs(y) < TRIP_FLAG_HEIGHT / 2 + 12) continue;
+      if (Math.abs(x) < scaledWidth / 2 + 12 && Math.abs(y) < scaledHeight / 2 + 12) continue;
       positions.push({ x, y });
     }
   }
@@ -44,14 +58,16 @@ function candidates(width: number, preferred?: TripFlagOffset): TripFlagOffset[]
   });
 }
 
-function flagRect(item: TripFlagLayoutItem, offset: TripFlagOffset): ScreenRect {
+function flagRect(item: TripFlagLayoutItem, offset: TripFlagOffset, scale = 1): ScreenRect {
   const centerX = item.anchor.x + offset.x;
   const centerY = item.anchor.y + offset.y;
+  const halfWidth = (item.width * scale) / 2;
+  const halfHeight = (TRIP_FLAG_HEIGHT * scale) / 2;
   return {
-    left: centerX - item.width / 2,
-    right: centerX + item.width / 2,
-    top: centerY - TRIP_FLAG_HEIGHT / 2,
-    bottom: centerY + TRIP_FLAG_HEIGHT / 2,
+    left: centerX - halfWidth,
+    right: centerX + halfWidth,
+    top: centerY - halfHeight,
+    bottom: centerY + halfHeight,
   };
 }
 
@@ -71,14 +87,20 @@ function outsideArea(rect: ScreenRect, viewport: { width: number; height: number
 }
 
 /**
- * Greedily packs map labels around their geographic anchors. Candidate positions
- * are stable, so labels only move when a collision or map-edge constraint changes.
+ * Greedily packs map labels above their geographic anchors so every leader
+ * rises north from its route pin. Candidate positions are stable, so labels
+ * only move when a collision or map-edge constraint changes.
+ *
+ * Offsets are screen-space label centers relative to their anchors. `scale` is
+ * the rendered callout scale (see `tripFlagScale`); collision boxes use scaled
+ * label dimensions so the packer reserves what is actually drawn.
  */
 export function layoutTripFlags(
   items: TripFlagLayoutItem[],
   viewport: { width: number; height: number },
   obstacles: ScreenRect[] = [],
   previousOffsets: Record<string, TripFlagOffset> = {},
+  scale = 1,
 ): Record<string, TripFlagOffset> {
   const placed: ScreenRect[] = [];
   const offsets: Record<string, TripFlagOffset> = {};
@@ -86,16 +108,17 @@ export function layoutTripFlags(
 
   for (const item of ordered) {
     const previous = previousOffsets[item.id];
+    const scaledWidth = item.width * scale;
     // Do not pull a label into view when its geographic anchor has left the map.
-    if (item.anchor.x < -item.width / 2 || item.anchor.x > viewport.width + item.width / 2 || item.anchor.y < 0 || item.anchor.y > viewport.height) {
+    if (item.anchor.x < -scaledWidth / 2 || item.anchor.x > viewport.width + scaledWidth / 2 || item.anchor.y < 0 || item.anchor.y > viewport.height) {
       offsets[item.id] = previous ?? DEFAULT_TRIP_FLAG_OFFSET;
       continue;
     }
     let best = DEFAULT_TRIP_FLAG_OFFSET;
     let bestScore = Number.POSITIVE_INFINITY;
     let foundOpenPosition = false;
-    for (const [index, offset] of candidates(item.width, previous).entries()) {
-      const rect = flagRect(item, offset);
+    for (const [index, offset] of candidates(scaledWidth, scale, previous).entries()) {
+      const rect = flagRect(item, offset, scale);
       const collisionArea = placed.reduce((sum, other) => sum + intersectionArea(expanded(rect, GAP), expanded(other, GAP)), 0);
       const obstacleArea = obstacles.reduce((sum, obstacle) => sum + intersectionArea(expanded(rect, 3), obstacle), 0);
       const offscreenArea = outsideArea(rect, viewport);
@@ -121,7 +144,7 @@ export function layoutTripFlags(
       }
     }
     offsets[item.id] = foundOpenPosition ? best : { ...best, hidden: true };
-    if (foundOpenPosition) placed.push(flagRect(item, best));
+    if (foundOpenPosition) placed.push(flagRect(item, best, scale));
   }
   return offsets;
 }

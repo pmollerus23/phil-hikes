@@ -20,12 +20,20 @@ export function tripFlagPosition(trip: Trip): [number, number] {
   return closest ? [closest[0], closest[1]] : center;
 }
 
-export default function TripFlag({ trip, selected = false, offset = DEFAULT_TRIP_FLAG_OFFSET, onClick }: { trip: Trip; selected?: boolean; offset?: TripFlagOffset; onClick: () => void }) {
+export default function TripFlag({ trip, selected = false, offset = DEFAULT_TRIP_FLAG_OFFSET, scale = 1, onClick }: { trip: Trip; selected?: boolean; offset?: TripFlagOffset; scale?: number; onClick: () => void }) {
   const [longitude, latitude] = tripFlagPosition(trip);
   const width = tripFlagWidth(trip.mapLabel);
-  const anchorX = -offset.x;
-  const anchorY = -offset.y;
-  const labelEdgeY = anchorY < 0 ? -14 : 12;
+  const clampedScale = Number.isFinite(scale) && scale > 0 ? Math.min(1, scale) : 1;
+  // `offset` is the screen-space label center chosen by the packer. Push the
+  // marker by the unscaled equivalent so the inner shrink toward the route pin
+  // lands the label exactly where the packer placed it while the pin stays put.
+  const markerX = offset.x / clampedScale;
+  const markerY = offset.y / clampedScale;
+  const anchorX = -markerX;
+  const anchorY = -markerY;
+  // Labels always sit above their pin, so the leader leaves the bottom edge,
+  // runs vertical from the pin, then elbows 90 degrees along the label.
+  const labelEdgeY = 12;
   const labelHalfLine = width / 2 - 5;
   const labelJoinX = Math.max(-labelHalfLine, Math.min(labelHalfLine, anchorX));
   const tetherPath = Math.abs(anchorX) <= labelHalfLine
@@ -35,8 +43,12 @@ export default function TripFlag({ trip, selected = false, offset = DEFAULT_TRIP
     width,
     '--anchor-x': `${anchorX}px`,
     '--anchor-y': `${anchorY}px`,
+    ...(clampedScale === 1 ? null : {
+      transform: `scale(${clampedScale})`,
+      transformOrigin: `${width / 2 + anchorX}px ${14 + anchorY}px`,
+    }),
   } as CSSProperties;
-  return <Marker longitude={longitude} latitude={latitude} anchor="center" offset={[offset.x, offset.y]}>
+  return <Marker longitude={longitude} latitude={latitude} anchor="center" offset={[markerX, markerY]}>
     <button className="trip-marker" style={style} data-selected={selected} data-hidden={!!offset.hidden} data-offset={`${offset.x},${offset.y}`} aria-hidden={offset.hidden || undefined} tabIndex={offset.hidden ? -1 : undefined} aria-pressed={selected} aria-label={`Trip · ${trip.title}`} title={`${trip.mapLabel} · ${trip.waypoints.length} waypoints`} onClick={event => { event.stopPropagation(); onClick(); }}>
       <span className="trip-marker-surface">
         <span className="trip-marker-label">{trip.mapLabel}</span>

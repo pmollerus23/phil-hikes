@@ -33,18 +33,16 @@
 .trip-marker[data-hidden=true]{opacity:0;pointer-events:none}
 .trip-marker-surface{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#f7f9f500,#f7f9f573 10px calc(100% - 10px),#f7f9f500);pointer-events:auto;transition:color 160ms ease,transform 160ms ease}
 .trip-marker-surface::before{content:"";position:absolute;left:5px;right:5px;bottom:2px;border-bottom:1px solid #171717a6;transition:border-color 160ms ease,transform 160ms ease}
-.trip-marker-surface::after{content:"";position:absolute;right:5px;bottom:2px;width:1px;height:5px;background:#171717a6;transform-origin:bottom;transition:background 160ms ease,height 160ms ease}
 .trip-marker-label{position:relative;z-index:1;padding:0 10px 4px;font:700 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.78px;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 0 #fff,0 0 5px #fff}
 .trip-marker-tether{position:absolute;z-index:-1;left:50%;top:50%;overflow:visible;pointer-events:none}
 .trip-marker-tether path{fill:none;stroke:#17171770;stroke-width:1;stroke-linecap:square;stroke-linejoin:miter;vector-effect:non-scaling-stroke;transition:stroke 160ms ease}
 .trip-marker-anchor{position:absolute;z-index:2;left:calc(50% + var(--anchor-x) - 2px);top:calc(50% + var(--anchor-y) - 2px);width:5px;height:5px;border:1px solid #171717a6;border-radius:50%;background:#f7f9f599;pointer-events:none;transition:background 160ms ease,border-color 160ms ease,transform 160ms ease}
 .trip-marker:hover .trip-marker-surface,.trip-marker:focus-visible .trip-marker-surface{color:#111;transform:translateY(-1px)}
 .trip-marker:hover .trip-marker-surface::before,.trip-marker:focus-visible .trip-marker-surface::before{border-color:var(--accent);transform:scaleX(.96)}
-.trip-marker:hover .trip-marker-surface::after,.trip-marker:focus-visible .trip-marker-surface::after{height:8px;background:var(--accent)}
 .trip-marker:hover .trip-marker-tether path,.trip-marker:focus-visible .trip-marker-tether path{stroke:#171717a8}
 .trip-marker:hover .trip-marker-anchor,.trip-marker:focus-visible .trip-marker-anchor{border-color:var(--accent);background:var(--accent);transform:scale(1.16)}
 .trip-marker[data-selected=true] .trip-marker-surface::before{border-color:var(--accent)}
-.trip-marker[data-selected=true] .trip-marker-surface::after,.trip-marker[data-selected=true] .trip-marker-anchor{border-color:var(--accent);background:var(--accent)}
+.trip-marker[data-selected=true] .trip-marker-anchor{border-color:var(--accent);background:var(--accent)}
 .trip-marker:active .trip-marker-surface{transform:translateY(0)}
 .trip-marker:focus-visible{outline:0}
 
@@ -58,4 +56,4 @@
 .photo-stop-list{margin-top:8px}.photo-stop-buttons{padding-top:0;border-top:0}.photo-stop-buttons .list-photo-count{margin-left:auto}.photo-stop-buttons button>span:last-child{margin-left:0}
 .demo-ribbon{position:absolute;z-index:4;left:50%;top:0;transform:translateX(-50%);padding:5px 10px;background:var(--accent);color:#fff;font:700 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.1em;white-space:nowrap}.demo-ribbon~.map-controls{top:28px}
 @media(max-width:700px){.place-open .trip-panel{width:auto;max-height:62%}.trip-title-row{align-items:center}.trip-title-row h1{font-size:25px}.photos-entry{margin-top:0;min-height:44px}.place-detail{margin-top:14px;padding:16px}.photo-stage{max-height:300px}.photo-stage img{max-height:300px}.gallery-grid{gap:16px 8px}.photo-lightbox-backdrop{padding:0}.photo-lightbox{width:100%;height:100%}.photo-lightbox header{padding-left:max(16px,env(safe-area-inset-left));padding-top:env(safe-area-inset-top)}.photo-lightbox header button{width:56px;height:56px}.lightbox-image img{inset:8px;width:calc(100% - 16px);height:calc(100% - 16px)}.photo-lightbox footer{padding:14px max(54px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));min-height:108px}.photo-lightbox footer p{font-size:13px}.lightbox-prev,.lightbox-next{top:auto;bottom:calc(38px + env(safe-area-inset-bottom));width:44px;height:44px;background:transparent;color:var(--ink);border-color:#17171744}.lightbox-prev{left:auto;right:58px}.lightbox-next{right:10px}.demo-ribbon{top:auto;bottom:0}}
-@media(prefers-reduced-motion:reduce){.photo-lightbox-backdrop,.photo-stage img{scroll-behavior:auto}.trip-marker-surface,.trip-marker-surface::before,.trip-marker-surface::after,.trip-marker-tether path,.trip-marker-anchor{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.photo-lightbox-backdrop,.photo-stage img{scroll-behavior:auto}.trip-marker-surface,.trip-marker-surface::before,.trip-marker-tether path,.trip-marker-anchor{transition:none!important}}

@@ -173,6 +173,10 @@ test('clearing selection restores other trips and gently zooms out around the cu
   await page.goto('/map?trip=dolly-sods-september-2025');
   const summer = page.getByRole('button',{name:'Trip · Dolly Sods · summer',exact:true});
   const fall = page.getByRole('button',{name:'Trip · Dolly Sods · fall',exact:true});
+  // Above-only leaders declutter to hidden flags (opacity 0, outside the
+  // accessible tree) when no above spot fits, so anchor geometry uses a
+  // text locator that resolves whether or not the flag is hidden.
+  const summerFlag = page.locator('.trip-marker',{hasText:'Dolly Sods · summer 2023'});
   const distant = page.getByRole('button',{name:/ · Little Rock Creek Lake$/});
   await expect(page.getByRole('slider')).toBeVisible();
   await expect(summer).toBeVisible();
@@ -205,7 +209,7 @@ test('clearing selection restores other trips and gently zooms out around the cu
   await expect.poll(async()=>(await readScale())/scaleBefore).toBeGreaterThan(1.6);
   expect((await readScale())/scaleBefore).toBeLessThan(1.8);
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const after = (await summer.locator('.trip-marker-anchor').boundingBox())!;
+  const after = (await summerFlag.locator('.trip-marker-anchor').boundingBox())!;
   // The flag's route anchor scales toward the same map center by 0.75 zoom levels.
   const ratio = 2**-.75;
   const centerX = box.x+box.width/2, centerY = box.y+box.height/2;
@@ -327,12 +331,21 @@ test('overlapping trips stay as labels until selected, and only the selected tri
  await expect(page.locator('.waypoint-marker')).toHaveCount(0);
  await page.locator('.panel-toggle').click();
  for(let i=0;i<3;i++) await page.getByRole('button',{name:'Zoom in',exact:true}).click();
- await expect(page.locator('.trip-marker')).toHaveCount(2);
- await expect(page.locator('.waypoint-marker')).toHaveCount(0);
- const summerLabel=(await summer.locator('.trip-marker-surface').boundingBox())!;
- const fallLabel=(await fall.locator('.trip-marker-surface').boundingBox())!;
- const labelsOverlap=summerLabel.x<fallLabel.x+fallLabel.width&&summerLabel.x+summerLabel.width>fallLabel.x&&summerLabel.y<fallLabel.y+fallLabel.height&&summerLabel.y+summerLabel.height>fallLabel.y;
- expect(labelsOverlap).toBe(false);
+  await expect(page.locator('.trip-marker')).toHaveCount(2);
+  await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+  // Above-only leaders declutter to hidden flags when no above spot fits, so
+  // only visible flags participate in the overlap check.
+  const labelBoxes = await page.locator('.trip-marker[data-hidden="false"] .trip-marker-surface').evaluateAll(elements => {
+    const map = document.querySelector('.maplibregl-map')!.getBoundingClientRect();
+    return elements.map(element => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    }).filter(box => box.x < map.right && box.x + box.width > map.left && box.y < map.bottom && box.y + box.height > map.top);
+  });
+  for (let i = 0; i < labelBoxes.length; i++) for (let j = i + 1; j < labelBoxes.length; j++) {
+    const a = labelBoxes[i], b = labelBoxes[j];
+    expect(a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y).toBe(false);
+  }
  // Restore the framing after zooming, then choose the route's floating label.
  await page.getByRole('button',{name:'Frame current trip or full archive'}).click();
  await fall.click();

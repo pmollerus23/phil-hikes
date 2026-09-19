@@ -8,7 +8,7 @@ import type { Bounds, PhotoStop, Point, Trip, TripDetail, TripPhoto, Waypoint } 
 import { createTopoStyle, emptyTopoStyle } from './topoStyle';
 import WaypointIcon from './WaypointIcon';
 import TripFlag, { tripFlagPosition, tripFlagWidth } from './TripFlag';
-import { DEFAULT_TRIP_FLAG_OFFSET, layoutTripFlags, type ScreenRect, type TripFlagOffset } from './tripFlagLayout';
+import { DEFAULT_TRIP_FLAG_OFFSET, layoutTripFlags, tripFlagScale, type ScreenRect, type TripFlagOffset } from './tripFlagLayout';
 import MapCrosshair from './MapCrosshair';
 import { overlappingTripIds, shouldGroupWaypoints, tripAreasOverlap } from './waypointGrouping';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -35,17 +35,18 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
  const [flagOffsets,setFlagOffsets]=useState<Record<string,TripFlagOffset>>({});
  const overlappingTrips=useMemo(()=>overlappingTripIds(trips),[trips]);
  const visibleTrips=useMemo(()=>selected?trips.filter(t=>t.id===selected.id||tripAreasOverlap(t.bounds,selected.bounds)):trips,[selected,trips]);
- const arrangeFlags=useCallback((groups:Set<string>)=>{
-  if(!map.current)return;
-  const m=map.current,container=m.getContainer(),containerBox=container.getBoundingClientRect();
-  const flagTrips=visibleTrips.filter(t=>t.waypoints.length>0&&(groups.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id))));
+  const arrangeFlags=useCallback((groups:Set<string>)=>{
+   if(!map.current)return;
+   const m=map.current,container=m.getContainer(),containerBox=container.getBoundingClientRect();
+   const scale=tripFlagScale(m.getZoom());
+   const flagTrips=visibleTrips.filter(t=>t.waypoints.length>0&&(groups.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id))));
   const obstacles=[...document.querySelectorAll<HTMLElement>('.map-controls,.map-error,.maplibregl-ctrl-top-right,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right')].map(element=>{
    const box=element.getBoundingClientRect();
    return {left:box.left-containerBox.left-5,top:box.top-containerBox.top-5,right:box.right-containerBox.left+5,bottom:box.bottom-containerBox.top+5};
   }).filter((box):box is ScreenRect=>box.right>0&&box.bottom>0&&box.left<container.clientWidth&&box.top<container.clientHeight);
-  const items=flagTrips.map(trip=>({id:trip.id,anchor:m.project(tripFlagPosition(trip)),width:tripFlagWidth(trip.mapLabel),priority:trip.id===selected?.id||trip.id===lastSelectedId.current}));
-  setFlagOffsets(previous=>{
-   const next=layoutTripFlags(items,{width:container.clientWidth,height:container.clientHeight},obstacles,previous);
+   const items=flagTrips.map(trip=>({id:trip.id,anchor:m.project(tripFlagPosition(trip)),width:tripFlagWidth(trip.mapLabel),priority:trip.id===selected?.id||trip.id===lastSelectedId.current}));
+   setFlagOffsets(previous=>{
+    const next=layoutTripFlags(items,{width:container.clientWidth,height:container.clientHeight},obstacles,previous,scale);
    const ids=Object.keys(next);
    return ids.length===Object.keys(previous).length&&ids.every(id=>previous[id]?.x===next[id].x&&previous[id]?.y===next[id].y&&previous[id]?.hidden===next[id].hidden)?previous:next;
   });
@@ -106,7 +107,8 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   previousTerrain.current=terrain;
   map.current?.easeTo({pitch:terrain?50:0,duration:duration()});
  },[terrain,ready]);
- const styleUrl=`https://api.maptiler.com/maps/${style==='outdoor'?'outdoor-v4':'satellite'}/style.json?key=${encodeURIComponent(apiKey)}`;
+  const styleUrl=`https://api.maptiler.com/maps/${style==='outdoor'?'outdoor-v4':'satellite'}/style.json?key=${encodeURIComponent(apiKey)}`;
+  const flagScale=tripFlagScale(zoom);
  return <Map ref={map} mapLib={maplibregl} initialViewState={{longitude:-96,latitude:39,zoom:3,pitch:0}} mapStyle={style==='outdoor'?topoStyle:styleUrl} styleDiffing={false} attributionControl={false} onLoad={()=>setReady(true)} onMove={syncGroups} onResize={syncGroups} onError={()=>onError('Map tiles could not load. Check your connection, MapTiler key, and allowed domains. The trip archive is still available.')} onClick={e=>{
   const id=e.features?.[0]?.properties?.tripId;
   if(typeof id==='string')onSelect(id);
@@ -123,7 +125,7 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
    <Layer id="detail-line" type="line" paint={{'line-color':'#ff5f00','line-width':4}}/>
    <Layer id="detail-hit" type="line" paint={{'line-width':22,'line-opacity':0}}/>
   </Source>
-  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} offset={flagOffsets[t.id]??DEFAULT_TRIP_FLAG_OFFSET} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=>{
+   {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} offset={flagOffsets[t.id]??DEFAULT_TRIP_FLAG_OFFSET} scale={flagScale} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=>{
    const photoCount=t.id===selected?.id?photos.filter(photo=>photo.waypointId===w.id).length:0;
    return <Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}${selectedPlaceId===w.id?' place-selected':''}`} aria-label={`${w.name} · ${t.title}${photoCount?` · ${photoCount} ${photoCount===1?'photo':'photos'}`:''}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} />{photoCount>0&&<span className="marker-photo-count" aria-hidden="true">{photoCount}</span>}</button></Marker>;
   }))}
