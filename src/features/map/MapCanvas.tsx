@@ -4,21 +4,21 @@ import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 // MapLibre 6 ships an external ESM worker; let Astro/Vite bundle its dependencies.
 maplibregl.setWorkerUrl(workerUrl);
-import type { Bounds, Point, Trip, TripDetail, Waypoint } from './model';
+import type { Bounds, PhotoStop, Point, Trip, TripDetail, TripPhoto, Waypoint } from './model';
 import { createTopoStyle, emptyTopoStyle } from './topoStyle';
 import WaypointIcon from './WaypointIcon';
 import TripFlag, { tripFlagWidth } from './TripFlag';
 import MapCrosshair from './MapCrosshair';
 import { overlappingTripIds, shouldGroupWaypoints, tripAreasOverlap } from './waypointGrouping';
 import 'maplibre-gl/dist/maplibre-gl.css';
-export interface MapHandle { showPoint:(point:Point|null)=>void; frame:()=>void }
-interface Props { trips:Trip[]; selected:Trip|null; detail:TripDetail|null; style:'outdoor'|'satellite'; terrain:boolean; apiKey:string; onSelect:(id:string|null)=>void; onWaypoint:(trip:Trip,w:Waypoint)=>void; onError:(message:string)=>void; panelOpen:boolean }
+export interface MapHandle { showPoint:(point:Point|null)=>void; ensureVisible:(point:Point)=>void; frame:()=>void }
+interface Props { trips:Trip[]; selected:Trip|null; detail:TripDetail|null; photoStops:PhotoStop[]; photos:TripPhoto[]; selectedPlaceId:string|null; style:'outdoor'|'satellite'; terrain:boolean; apiKey:string; onSelect:(id:string|null)=>void; onWaypoint:(trip:Trip,w:Waypoint|PhotoStop)=>void; onError:(message:string)=>void; panelOpen:boolean }
 export function archiveBounds(trips:Trip[]):Bounds|null {
  const bs=trips.map(t=>t.bounds).filter((b):b is Bounds=>b!==null);
  return bs.length?bs.reduce<Bounds>((a,b)=>[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])],[180,90,-180,-90]):null;
 }
-export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,selected,detail,style,terrain,apiKey,onSelect,onWaypoint,onError,panelOpen},ref) {
- const map=useRef<MapRef>(null), marker=useRef<maplibregl.Marker|null>(null);const [ready,setReady]=useState(false);
+export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,selected,detail,photoStops,photos,selectedPlaceId,style,terrain,apiKey,onSelect,onWaypoint,onError,panelOpen},ref) {
+ const map=useRef<MapRef>(null), marker=useRef<maplibregl.Marker|null>(null);const [ready,setReady]=useState(false),[zoom,setZoom]=useState(3);
  const [topoStyle,setTopoStyle]=useState(emptyTopoStyle);
  useEffect(()=>{
   const controller=new AbortController();
@@ -35,6 +35,7 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
  const syncGroups=useCallback(()=>{
   if(!map.current)return;
   const m=map.current;
+  const nextZoom=m.getZoom();setZoom(previous=>Math.abs(previous-nextZoom)<.1?previous:nextZoom);
   setGroupedTrips(previous=>{
    const next=new Set(visibleTrips.filter(t=>shouldGroupWaypoints(t.waypoints.map(w=>m.project([w.lon,w.lat])),previous.has(t.id))).map(t=>t.id));
    return next.size===previous.size&&[...next].every(id=>previous.has(id))?previous:next;
@@ -64,7 +65,12 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   }
   if(ready) frameLatest.current();
  },[ready,bounds,selected?.id]);
- useImperativeHandle(ref,()=>({frame,showPoint(p){
+ useImperativeHandle(ref,()=>({frame,ensureVisible(p){
+  if(!map.current)return;
+ const m=map.current, projected=m.project([p.lon,p.lat]), container=m.getContainer(), mobile=window.matchMedia('(max-width: 700px)').matches;
+  const safe={left:mobile?34:panelOpen?410:70,right:container.clientWidth-70,top:80,bottom:container.clientHeight-(mobile&&panelOpen?Math.min(container.clientHeight*.58,560):70)};
+  if(m.getZoom()<10||projected.x<safe.left||projected.x>safe.right||projected.y<safe.top||projected.y>safe.bottom)m.easeTo({center:[p.lon,p.lat],zoom:Math.max(m.getZoom(),11),offset:mobile&&panelOpen?[0,-container.clientHeight*.18]:panelOpen?[170,0]:[0,0],duration:duration()});
+ },showPoint(p){
   if(!p){marker.current?.remove();marker.current=null;return;} if(!map.current)return;
   if(!marker.current){const el=document.createElement('div');el.className='profile-marker';el.setAttribute('aria-hidden','true');marker.current=new maplibregl.Marker({element:el}).setLngLat([p.lon,p.lat]).addTo(map.current.getMap());}
   else marker.current.setLngLat([p.lon,p.lat]);
@@ -100,7 +106,14 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
    <Layer id="detail-line" type="line" paint={{'line-color':'#ff5f00','line-width':4}}/>
    <Layer id="detail-hit" type="line" paint={{'line-width':22,'line-opacity':0}}/>
   </Source>
-  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=><Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}`} aria-label={`${w.name} · ${t.title}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} /></button></Marker>))}
+  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=>{
+   const photoCount=t.id===selected?.id?photos.filter(photo=>photo.waypointId===w.id).length:0;
+   return <Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}${selectedPlaceId===w.id?' place-selected':''}`} aria-label={`${w.name} · ${t.title}${photoCount?` · ${photoCount} ${photoCount===1?'photo':'photos'}`:''}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} />{photoCount>0&&<span className="marker-photo-count" aria-hidden="true">{photoCount}</span>}</button></Marker>;
+  }))}
+  {selected&&photoStops.filter(stop=>zoom>=10||selectedPlaceId===stop.id).map(stop=>{
+   const photoCount=photos.filter(photo=>photo.stopId===stop.id).length;
+   return <Marker key={`${selected.id}-${stop.id}`} longitude={stop.lon} latitude={stop.lat} anchor="center"><button className={`waypoint-marker photo-stop-marker${selectedPlaceId===stop.id?' place-selected':''}`} aria-label={`${stop.name} · photo stop · ${selected.title} · ${photoCount} ${photoCount===1?'photo':'photos'}`} title={stop.name} onClick={event=>{event.stopPropagation();onWaypoint(selected,stop);}}><span aria-hidden="true">▣</span><span className="marker-photo-count" aria-hidden="true">{photoCount}</span></button></Marker>;
+  })}
   <MapCrosshair map={map} ready={ready} satellite={style==='satellite'} />
   <NavigationControl position="top-right" showCompass={true}/><ScaleControl position="bottom-left" unit="imperial"/><AttributionControl position="bottom-right" compact={false}/>
  </Map>;

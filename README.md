@@ -15,6 +15,8 @@ npm run dev
 
 Open http://localhost:4321/map. No key is necessary to browse trip summaries, notes, waypoints, or elevation profiles. The map shows setup instructions until configured; no fallback tile service is used. Restart the server after editing `.env` (`npx astro dev stop` first if it is running in the background).
 
+See [Adding trip photos](docs/photos.md) for the photo folder convention, responsive image guidance, manifest examples, waypoint ID discovery, and validation workflow. A synthetic interaction preview is available at `/photo-demo?trip=little-rock-creek-lake-mt-2024`; it does not add invented content to the normal archive.
+
 ```sh
 npm run import:gpx    # regenerate static assets and inventory
 npm run check         # Astro/React and importer/test TypeScript checks
@@ -68,7 +70,7 @@ Optional `pathIds` chooses an ordered subset of source paths to publish in the m
 
 ## Format and assumptions
 
-- Typed contracts: `src/features/map/model.ts`. Static index: `public/trips/index.json`. Each trip includes dates with provenance, bounds, statistics, overview GeoJSON, waypoints, optional notes/region/tags, and extension points for photos. Full detail is fetched from `/trips/<id>.json` only on selection.
+- Typed contracts: `src/features/map/model.ts`. Static index: `public/trips/index.json`. Each trip includes dates with provenance, bounds, statistics, overview GeoJSON, waypoints, and optional notes/region/tags. Full geometry and trip photo metadata are fetched from `/trips/<id>.json` only on selection.
 - GPX 1.1 `trk/trkseg/trkpt` and `rte/rtept` are supported separately. Each track segment and each planned route is a distinct line. Empty/single-point segments remain in detail and the inventory but cannot form a line. No connection is drawn or measured between segments or routes.
 - All supplied exports contain planned routes, not recorded tracks. `rte` does not imply that a route was actually traveled. There are no GPX metadata blocks or Gaia object IDs in these exports. Style extensions contain line colors. Parsed extension values are retained; namespace prefixes are normalized by the XML parser.
 - Detail points explicitly pair longitude, latitude, elevation (meters or null), and original timestamp (or null). GeoJSON elevations are also preserved. These point records are the full-resolution profile source. Route and waypoint names, descriptions, symbols, types, and available extensions are retained. No elapsed time or speed is inferred from repeated route timestamps.
@@ -85,7 +87,7 @@ Shared 48px Astro navigation, `/` home, browser-only React island at `/map`, key
 
 Map state is uncontrolled during camera movement. Geometry is rendered in layers; only the small number of waypoints use HTML markers. Profile movement updates a local profile component and an imperative map marker, not the entire interface. Fetches are validated and aborted on selection change/unmount; map listeners and profile markers are cleaned up. Missing/invalid files, empty archives, failed requests, provider errors, unsupported WebGL, and missing configuration have visible fallback states.
 
-Deferred: playback, galleries, advanced filtering, uploads/editing, accounts, private collections, synchronization, offline maps, and a geospatial backend. Large archives would benefit from geometry tiling and waypoint clustering. MapLibre remains a sizable map-only JavaScript chunk; it is not sent to Home.
+Deferred: playback, in-browser uploads/editing, advanced filtering, accounts, private collections, synchronization, offline maps, and a geospatial backend. Large archives would benefit from geometry tiling and waypoint clustering. MapLibre remains a sizable map-only JavaScript chunk; it is not sent to Home.
 
 ## Inventory and verification
 

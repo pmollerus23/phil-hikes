@@ -27,10 +27,15 @@ test('Maine shows one continuous route, its full profile, and all waypoint notes
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   await expect(page.getByRole('slider')).toHaveAttribute('max','3440');
   await expect(page.locator('.trip-stats')).toContainText('61.5 mi');
-  await expect(page.locator('.waypoint-marker')).toHaveCount(10);
-  await page.getByText('Source geometry · 1 path',{exact:true}).click();
-  await expect(page.locator('.data-notes').first()).toContainText('Maine AT Section Route');
-  await expect(page.locator('.data-notes').first()).not.toContainText('Day 1');
+  await expect(page.locator('.waypoint-marker:not(.photo-stop-marker)')).toHaveCount(10);
+  await expect(page.locator('.photo-stop-marker')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Photos · 86'})).toBeVisible();
+  await expect(page.locator('.waypoint-marker[aria-label*="Campsite Night 3"][aria-label*="2 photos"]')).toBeVisible();
+  await expect(page.locator('.waypoint-marker[aria-label*="Night 4"][aria-label*="2 photos"]')).toBeVisible();
+  await expect(page.locator('.waypoint-marker[aria-label*="Sugarloaf Summit"][aria-label*="1 photo"]')).toBeVisible();
+  const source=page.getByText('Source geometry · 1 path',{exact:true});await source.click();
+  await expect(source.locator('..')).toContainText('Maine AT Section Route');
+  await expect(source.locator('..')).not.toContainText('Day 1');
   await page.getByRole('button',{name:/Sugarloaf Summit.*summit/}).click();
   await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Cool summit.');
   await page.screenshot({path:`test-results/maine-continuous-route-${test.info().project.name}.png`,fullPage:true});
@@ -84,6 +89,15 @@ test('map route can be selected, and provider failure has an actionable message'
 test('unsupported WebGL retains the trip archive',async({page})=>{
  await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:any[]){if(type==='webgl2')return null;return original.apply(this,[type,...args] as any);} as typeof original;});
  await page.goto('/map?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
+});
+
+test('photo places stay synchronized between map markers, list, gallery, and detail',async({page})=>{
+ await page.goto('/photo-demo?trip=little-rock-creek-lake-mt-2024');
+ await expect(page.locator('.maplibregl-canvas')).toBeVisible();await expect(page.locator('.waypoint-marker')).toHaveCount(4);await expect(page.locator('.marker-photo-count')).toHaveCount(2);
+ const camp=page.getByRole('button',{name:/Night campsite · Little Rock Creek Lake · 2 photos/});await camp.click();await expect(camp).toHaveClass(/place-selected/);await expect(page).toHaveURL(/place=wpt-1/);await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Last light settled');
+ await page.getByRole('button',{name:'← Back to trip'}).click();await page.getByRole('button',{name:'Photos · 3'}).click();await page.getByRole('button',{name:/Enlarge photo 1/}).click();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');
+ const stop=page.getByRole('button',{name:/Creek crossing · photo stop/});await expect(stop).toHaveClass(/place-selected/);await expect(page.getByRole('dialog',{name:'Enlarged photo viewer'})).toContainText('Creek crossing');await expect(page).toHaveURL(/place=creek-crossing.*photo=demo-creek-crossing/);await page.keyboard.press('Escape');await expect(page.getByRole('region',{name:'Trip photo gallery'})).toBeVisible();
+ await page.screenshot({path:`test-results/photo-map-sync-${test.info().project.name}.png`,fullPage:true});
 });
 
 test('trip flags show identifying titles and years',async({page,isMobile})=>{

@@ -1,0 +1,10 @@
+{
+  "stops": [
+    {"id":"creek-crossing","name":"Creek crossing","description":"A photo-only stop between named places. Its coordinates are authored explicitly in the demo manifest.","kind":"photo","lon":-114.3065,"lat":46.0342,"elevation":null,"time":null}
+  ],
+  "photos": [
+    {"id":"demo-lake-evening","waypointId":"wpt-1","src":"/demo/photos/lake-evening.svg","thumbnailSrc":"/demo/photos/lake-evening-thumb.svg","width":1200,"height":800,"alt":"Illustrated mountain lake and orange tent at dusk","caption":"Last light settled across the lake while camp went quiet.","order":1},
+    {"id":"demo-camp-morning","waypointId":"wpt-1","src":"/demo/photos/camp-morning.svg","thumbnailSrc":"/demo/photos/camp-morning-thumb.svg","width":800,"height":1200,"alt":"Illustrated orange tent below green mountains in morning light","caption":"A cold, clear morning at the water’s edge before packing up.","order":2},
+    {"id":"demo-creek-crossing","stopId":"creek-crossing","src":"/demo/photos/creek-crossing.svg","thumbnailSrc":"/demo/photos/creek-crossing-thumb.svg","width":1200,"height":750,"alt":"Illustrated stepping stones crossing a mountain creek","caption":"The route crossed here on broad stones just above the current.","order":3,"credit":"Synthetic preview fixture"}
+  ]
+}

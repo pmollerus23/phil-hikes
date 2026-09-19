@@ -1,6 +1,7 @@
 import { readdir, readFile, mkdir, writeFile, rename, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { parseGpx, stableId } from './gpx';
+import { validatePhotoManifest } from './photos';
 import type { Override } from '../src/features/map/model';
 const source='gpx_map_data';
 const overrides:Record<string,Override>=JSON.parse(await readFile('data/trip-overrides.json','utf8'));
@@ -16,6 +17,11 @@ for(const filename of files) {
  catch(e) {errors.push(`${filename}: ${String(e)}`);}
 }
 if(errors.length) throw new Error(`Import aborted without replacing output:\n${errors.join('\n')}`);
+const photoManifest=await validatePhotoManifest(JSON.parse(await readFile('data/trip-photos.json','utf8')),new Map(results.map(result=>[result.trip.id,result.trip.waypoints])));
+for(const result of results) {
+ const photos=photoManifest.trips[result.trip.id];
+ if(photos) { result.detail.photoStops=photos.stops; result.detail.photos=photos.photos; }
+}
 const staging='public/.trips-import'; await mkdir(staging,{recursive:true});
 for(const r of results) await writeFile(`${staging}/${r.trip.id}.json`,JSON.stringify(r.detail));
 await writeFile(`${staging}/index.json`,JSON.stringify(results.map(r=>r.trip)));

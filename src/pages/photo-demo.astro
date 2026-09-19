@@ -1,0 +1,5 @@
+---
+import Shell from '../layouts/Shell.astro';
+import MapApp from '../features/map/MapApp';
+---
+<Shell title="Photo feature demo · Phil’s field notes" map><MapApp client:only="react" photoDemo><p slot="fallback">Loading the photo feature demo…</p></MapApp><noscript>Enable JavaScript to review the photo feature demo.</noscript></Shell>

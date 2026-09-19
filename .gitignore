@@ -18,6 +18,9 @@ coverage/
 # Temporary GPX import staging (keep original GPX and generated trip assets)
 /public/.trips-import/
 
+# Local source-photo archives; optimized web assets are stored under public/photos/
+/maine_at_photos.zip
+
 # Local logs
 *.log
 
