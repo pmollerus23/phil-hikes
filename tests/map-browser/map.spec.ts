@@ -78,15 +78,19 @@ test('Maine shows one continuous route, a photo carousel, and trip info on deman
 test('updated trips render their current routes, profiles, and waypoint notes',async({page})=>{
   const cases=[
     {id:'dolly-sods-june-2023',max:'1244',waypoints:5,paths:1,waypoint:/Camp Night 3.*camp/,note:'exploding river rock'},
-    {id:'johnson-lake-loop-mt-2024',max:'1295',waypoints:2,paths:1,waypoint:/Night Campsite.*camp/,note:'Beautiful lakeside view'},
+    {id:'johnson-lake-loop-mt-2024',max:'1295',waypoints:2,paths:1,waypoint:/Night Campsite.*camp/,note:'Beautiful lakeside view',photos:57},
     {id:'lspp-may-2025-canoe-trip',max:'926',waypoints:6,paths:1,waypoint:/Base Camp.*camp/,note:'Ranger Cabin'},
   ];
   for(const trip of cases){
     await page.goto(`/map?trip=${trip.id}`);
     await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+    if(trip.photos){
+      await expect(page.getByRole('list',{name:'Trip photos in route order'}).locator('.carousel-item')).toHaveCount(trip.photos);
+      await page.getByRole('button',{name:'ⓘ Trip info'}).click();
+    }
     await expect(page.getByRole('slider')).toHaveAttribute('max',trip.max);
-    await expect(page.locator('.waypoint-marker')).toHaveCount(trip.waypoints);
-    await expect(page.locator('.data-notes').first().locator('summary')).toContainText(`Source geometry · ${trip.paths} path`);
+    await expect(page.locator('.waypoint-marker:not(.photo-stop-marker)')).toHaveCount(trip.waypoints);
+    await expect(page.getByText(`Source geometry · ${trip.paths} path`,{exact:false})).toBeVisible();
     if(trip.id==='lspp-may-2025-canoe-trip'){
       await expect(page.locator('.trip-stats')).toContainText('12.1 mi');
       await expect(page.locator('.data-notes').first()).not.toContainText('Fishing Route');

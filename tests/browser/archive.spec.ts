@@ -102,5 +102,17 @@ test('Vermud trip loads its authored GPS photo carousel in route order',async({p
  await expect(page.locator('.trip-footer')).toContainText('Vermud');
  await expect(page.locator('.trip-footer')).toContainText('32 photos');
  await first.click();
- const viewer=page.getByRole('dialog',{name:'Enlarged photo viewer'});await expect(viewer).toContainText('TRIP COLLECTION · 01 / 32');await expect(viewer.locator('img')).toHaveAttribute('src','/photos/vermud-2021/vermud-photo-01.webp');
+ const viewer=page.getByRole('dialog',{name:'Enlarged photo viewer'});await expect(viewer).toContainText('TRIP COLLECTION · 01 / 32'); await expect(viewer.locator('img')).toHaveAttribute('src','/photos/vermud-2021/vermud-photo-01.webp');
+});
+
+test('Johnson Lake trip loads its authored GPS photo carousel in route order',async({page})=>{
+ await page.goto('/map?trip=johnson-lake-loop-mt-2024');
+ const carousel=page.getByRole('list',{name:'Trip photos in route order'});
+ await expect(carousel.locator('.carousel-item')).toHaveCount(57);
+ const first=carousel.getByRole('button',{name:/Enlarge photo 1:/});await expect(first.locator('img')).toHaveAttribute('src','/photos/johnson-lake-loop-mt-2024/johnson-lake-photo-01-thumb.webp');
+ await expect.poll(()=>first.locator('img').evaluate(image=>(image as HTMLImageElement).complete&&(image as HTMLImageElement).naturalWidth>0)).toBe(true);
+ await expect(page.locator('.trip-footer')).toContainText('Johnson Lake');
+ await expect(page.locator('.trip-footer')).toContainText('57 photos');
+ await first.click();
+ const viewer=page.getByRole('dialog',{name:'Enlarged photo viewer'});await expect(viewer).toContainText('TRIP COLLECTION · 01 / 57');await expect(viewer.locator('img')).toHaveAttribute('src','/photos/johnson-lake-loop-mt-2024/johnson-lake-photo-01.webp');
 });

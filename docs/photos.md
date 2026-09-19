@@ -119,3 +119,17 @@ Eight files had capture times but no GPS tags, plus one shared image with neithe
 - Photo 32 (`A2156062-….jpg`, no timestamp or GPS): `vermud-stop-09`; the misty pond-morning coffee scene matches the July 5 Stratton Pond group.
 
 The public labels and captions are intentionally temporary: `Vermud photo 01` through `Vermud photo 32`.
+
+## Johnson Lake 2024 import notes
+
+`johnson-lake-trip-photos.zip` contained 67 files. The imported set is the 57 unique still photos captured June 19–20, 2024. Five `.MOV` live-photo videos were excluded (the site has no video support), and no duplicates were found. The source ZIP remains local and is ignored by Git; the site uses the optimized WebP assets in `public/photos/johnson-lake-loop-mt-2024/`.
+
+Fifty-five photos had embedded GPS coordinates, all on the mapped route, and their markers use the recorded positions. Photos combine into one stop only when every image stays within 75 meters of the marker. Five drive shots with GPS positions 6–34 km off the route (`IMG_8300`, `IMG_8324`, `IMG_8331`, `IMG_8335`, `IMG_8775`) were excluded so they would not scatter markers far outside the trip bounds.
+
+Three files had no usable GPS. Their temporary associations were owner-authorized using adjacent timestamps and visible landmarks:
+
+- Photo 01 (`IMG_8341.JPEG`, hiker and truck at the trailhead): `wpt-2`, Start/End, six minutes before the recorded trailhead photo.
+- Photo 31 (`IMG_8548.JPEG`, same minute as photo 30): `johnson-stop-15`, Night Campsite.
+- Photo 57 (`0E3DED37-….jpg`, post-trip beer): `wpt-2`, Start/End, trip finale.
+
+The public labels and captions are intentionally temporary: `Johnson Lake photo 01` through `Johnson Lake photo 57`.
