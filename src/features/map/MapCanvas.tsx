@@ -12,7 +12,7 @@ import { DEFAULT_TRIP_FLAG_OFFSET, layoutTripFlags, tripFlagScale, type ScreenRe
 import MapCrosshair from './MapCrosshair';
 import { overlappingTripIds, shouldGroupWaypoints, tripAreasOverlap } from './waypointGrouping';
 import 'maplibre-gl/dist/maplibre-gl.css';
-export interface MapHandle { showPoint:(point:Point|null)=>void; ensureVisible:(point:Point)=>void; frame:()=>void }
+export interface MapHandle { showPoint:(point:Point|null)=>void; focusPoint:(point:Point)=>void; frame:()=>void }
 interface Props { trips:Trip[]; selected:Trip|null; detail:TripDetail|null; photoStops:PhotoStop[]; photos:TripPhoto[]; selectedPlaceId:string|null; style:'outdoor'|'satellite'; terrain:boolean; apiKey:string; onSelect:(id:string|null)=>void; onWaypoint:(trip:Trip,w:Waypoint|PhotoStop)=>void; onError:(message:string)=>void; panelOpen:boolean }
 export function archiveBounds(trips:Trip[]):Bounds|null {
  const bs=trips.map(t=>t.bounds).filter((b):b is Bounds=>b!==null);
@@ -83,12 +83,13 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   }
   if(ready) frameLatest.current();
  },[ready,bounds,selected?.id]);
- useImperativeHandle(ref,()=>({frame,ensureVisible(p){
-  if(!map.current)return;
- const m=map.current, projected=m.project([p.lon,p.lat]), container=m.getContainer(), mobile=window.matchMedia('(max-width: 700px)').matches;
-  const safe={left:mobile?34:panelOpen?410:70,right:container.clientWidth-70,top:80,bottom:container.clientHeight-(mobile&&panelOpen?Math.min(container.clientHeight*.58,560):70)};
-  if(m.getZoom()<10||projected.x<safe.left||projected.x>safe.right||projected.y<safe.top||projected.y>safe.bottom)m.easeTo({center:[p.lon,p.lat],zoom:Math.max(m.getZoom(),11),offset:mobile&&panelOpen?[0,-container.clientHeight*.18]:panelOpen?[170,0]:[0,0],duration:duration()});
- },showPoint(p){
+ useImperativeHandle(ref,()=>({frame,focusPoint(p){
+   if(!map.current)return;
+  const m=map.current, container=m.getContainer(), mobile=window.matchMedia('(max-width: 700px)').matches;
+  // Every new selection glides its point into the unobstructed view. Zoom is
+  // never forced beyond a close-up floor, so nearby selections only nudge.
+  m.easeTo({center:[p.lon,p.lat],zoom:Math.max(m.getZoom(),10),offset:mobile&&panelOpen?[0,-container.clientHeight*.18]:panelOpen?[170,0]:[0,0],duration:duration()});
+  },showPoint(p){
   if(!p){marker.current?.remove();marker.current=null;return;} if(!map.current)return;
   if(!marker.current){const el=document.createElement('div');el.className='profile-marker';el.setAttribute('aria-hidden','true');marker.current=new maplibregl.Marker({element:el}).setLngLat([p.lon,p.lat]).addTo(map.current.getMap());}
   else marker.current.setLngLat([p.lon,p.lat]);

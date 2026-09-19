@@ -114,7 +114,53 @@ test('photo places stay synchronized between map markers, list, gallery, and det
  const camp=page.getByRole('button',{name:/Night campsite · Little Rock Creek Lake · 2 photos/});await camp.click();await expect(camp).toHaveClass(/place-selected/);await expect(page).toHaveURL(/place=wpt-1/);await expect(page.getByRole('region',{name:'Waypoint details'})).toContainText('Last light settled');
  await page.getByRole('button',{name:'← Back to trip'}).click();await page.getByRole('button',{name:'Photos · 3'}).click();await page.getByRole('button',{name:/Enlarge photo 1/}).click();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');
  const stop=page.getByRole('button',{name:/Creek crossing · photo stop/});await expect(stop).toHaveClass(/place-selected/);await expect(page.getByRole('dialog',{name:'Enlarged photo viewer'})).toContainText('Creek crossing');await expect(page).toHaveURL(/place=creek-crossing.*photo=demo-creek-crossing/);await page.keyboard.press('Escape');await expect(page.getByRole('region',{name:'Trip photo gallery'})).toBeVisible();
- await page.screenshot({path:`test-results/photo-map-sync-${test.info().project.name}.png`,fullPage:true});
+  await page.screenshot({path:`test-results/photo-map-sync-${test.info().project.name}.png`,fullPage:true});
+});
+
+test('selecting a waypoint glides the map to it', async ({ page, isMobile }) => {
+  // The drag-to-displace setup deselects the trip on touch viewports, so this
+  // camera assertion runs on desktop; the focus path itself is shared.
+  test.skip(!!isMobile, 'Touch drag setup deselects the trip; desktop covers the shared focus path.');
+  await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+  const camp = page.getByRole('button', { name: /Night campsite · Little Rock/ });
+  await expect(camp).toBeVisible();
+  const canvas = page.locator('.maplibregl-canvas');
+  const bounds = (await canvas.boundingBox())!;
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const markerCenter = async () => {
+    const box = await camp.boundingBox();
+    return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : null;
+  };
+  const inSafeView = (point: { x: number; y: number } | null) => !!point
+    && point.x > 70 && point.x < bounds.width - 70 && point.y > 80 && point.y < bounds.height - 70;
+  // Nudge the marker toward the canvas center: it stays onscreen (where the
+  // old camera code would not move at all) but leaves its framed position.
+  const framed = (await markerCenter())!;
+  const dragX = framed.x < center.x ? 180 : -180;
+  const empty = await page.evaluate(({ x, y, width, height }) => {
+    for (let localY = 120; localY < height - 120; localY += 40) for (let localX = 120; localX < width - 120; localX += 40) {
+      if (document.elementFromPoint(x + localX, y + localY)?.classList.contains('maplibregl-canvas')) return { x: x + localX, y: y + localY };
+    }
+    return null;
+  }, { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+  expect(empty).not.toBeNull();
+  await page.mouse.move(empty!.x, empty!.y);
+  await page.mouse.down();
+  await page.mouse.move(empty!.x + dragX, empty!.y, { steps: 12 });
+  await page.mouse.up();
+  const nudged = (await markerCenter())!;
+  expect(Math.hypot(nudged.x - framed.x, nudged.y - framed.y)).toBeGreaterThan(100);
+  expect(inSafeView(nudged)).toBe(true);
+  await page.locator('.waypoint-list button', { hasText: 'Night campsite' }).click();
+  await expect(page.getByRole('region', { name: 'Waypoint details' })).toContainText('Night campsite');
+  // The selection glides the marker to the unobstructed focus target.
+  const target = isMobile
+    ? { x: center.x, y: center.y - bounds.height * 0.18 }
+    : { x: center.x + 170, y: center.y };
+  await expect.poll(async () => {
+    const point = await markerCenter();
+    return point ? Math.hypot(point.x - target.x, point.y - target.y) : Number.POSITIVE_INFINITY;
+  }, { timeout: 8000 }).toBeLessThan(80);
 });
 
 test('trip flags show identifying titles and years',async({page,isMobile})=>{
