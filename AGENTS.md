@@ -37,7 +37,7 @@ Use TypeScript, ES modules, single-quoted JavaScript strings, and semicolons. Pr
 
 ## Testing Guidelines
 
-Name unit tests `*.test.ts` and browser tests `*.spec.ts`. Run checks, unit tests, and build before submitting code changes; run relevant browser suites for interface changes. Cover segment boundaries, missing values, stable IDs, URL history, stale requests, and photo associations when applicable. Photo viewer tests must include portrait and landscape assets and confirm the full image remains contained without cropping. No coverage percentage is enforced. Fixture tests do not establish live MapTiler correctness.
+Name unit tests `*.test.ts` and browser tests `*.spec.ts`. Run checks, unit tests, and build before submitting code changes; run relevant browser suites for interface changes. Cover segment boundaries, missing values, stable IDs, URL history, stale requests, and photo associations when applicable. Photo viewer tests must include portrait and landscape assets and confirm the full image remains contained without cropping. Flag tests must cover above-only stacking, scaled packing, and whole-viewport-pixel crosshair guides; camera tests must confirm selection glides out-of-view markers back into the safe view. No coverage percentage is enforced. Fixture tests do not establish live MapTiler correctness.
 
 ## Data & Configuration
 
@@ -50,6 +50,16 @@ Gaia export caveat (owner-confirmed): Removing elements from Gaia folders archiv
 For LSPP, publish only the updated portage route. Its fishing route and older portage version are obsolete even if they remain in the export. Preserve waypoint and campsite notes unless the owner asks to remove them.
 
 For Maine AT 2026, the current gallery contains 86 unique photos from August 5–11, 2026. Preserve recorded EXIF positions, including the documented off-route coordinate; do not move photos onto the trail for visual convenience. Six photos without GPS have owner-approved temporary associations documented in `docs/photos.md`. Their public names and captions remain temporary until the owner supplies final text. The root `maine_at_photos.zip` is a local source archive, is ignored by Git, and must not be served by the site.
+
+## Map Presentation Conventions
+
+Trip callouts (`TripFlag`, `tripFlagLayout`) follow these owner-confirmed rules:
+
+- Callouts render full-size at zoom 5 and above (`TRIP_FLAG_FULL_SIZE_ZOOM`), then shrink gradually to a floor of 0.6 (`TRIP_FLAG_MIN_SCALE`) via `tripFlagScale`. The whole flag scales toward its route pin so the anchor never drifts, and the packer reserves scaled dimensions in screen space.
+- Leaders always rise north from the route pin: labels sit above their anchor with a straight pole when centered or a 90-degree elbow otherwise, stacking vertically (`-34`, `-76`, `-118`) on collisions within `MAX_TRIP_FLAG_REACH` (120px). Below-pin positions are never used; stale below-pin offsets reseed above. When no above spot fits — most often near the top edge on short mobile viewports — the flag declutters to hidden rather than flipping below.
+- Underline and leader are a single SVG path with one uniform stroke and round joins, so joints cannot render as steps. Hover/selected accent applies to the whole leader, anchor dot, and underline together.
+- Selection always glides the camera: `MapHandle.focusPoint` centers each newly selected waypoint, photo stop, or photo association in the unobstructed view with a zoom floor of 10. Trip selection still frames via fitBounds; elevation-profile hover never moves the camera.
+- The crosshair snaps guides in viewport space so 1px lines cover full physical pixels even when the map container sits at a fractional offset, and renders a 4px focal reticle dot. Touch pointers never leave a crosshair behind.
 
 ## Future Optimization Goal
 
