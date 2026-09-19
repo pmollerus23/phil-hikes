@@ -20,6 +20,7 @@ coverage/
 
 # Local source-photo archives; optimized web assets are stored under public/photos/
 /maine_at_photos.zip
+/vermud-2021-photos.zip
 
 # Local logs
 *.log

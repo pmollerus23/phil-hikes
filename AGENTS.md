@@ -60,6 +60,8 @@ Trip callouts (`TripFlag`, `tripFlagLayout`) follow these owner-confirmed rules:
 - Underline and leader are a single SVG path with one uniform stroke and round joins, so joints cannot render as steps. Hover/selected accent applies to the whole leader, anchor dot, and underline together.
 - Selection always glides the camera: `MapHandle.focusPoint` centers each newly selected waypoint, photo stop, or photo association in the unobstructed view with a zoom floor of 10. Trip selection still frames via fitBounds; elevation-profile hover never moves the camera.
 - The crosshair snaps guides in viewport space so 1px lines cover full physical pixels even when the map container sits at a fractional offset, and renders a 4px focal reticle dot. Touch pointers never leave a crosshair behind.
+- Trips with photos open a route-order photo carousel (`TripCarousel`, sorted by photo `order`) over a brief trip footer (title, region, dates, photo count). Hover or keyboard focus reveals a translucent caption overlay drawn from the photo `caption`/`credit` fields; clicking a photo opens the existing trip lightbox. Each photo also carries a subtle jump-to chip that pans and zooms the map to its place without opening the viewer. The ⓘ Trip info footer button toggles the compact stats/notes/profile/waypoint view. Place selection highlights the matching carousel items instead of opening a separate detail view. The old trip gallery and its `gallery=photos` URL parameter are retired; photo-less trips keep the previous detail views.
+- Any selected trip uses the wide (390px) panel, and map framing reserves room for it up front on desktop and mobile.
 
 ## Future Optimization Goal
 

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validatePhotoManifest } from '../scripts/photos';
-import type { Waypoint } from '../src/features/map/model';
+import { orderedTripPhotos } from '../src/features/map/Photos';
+import type { TripPhoto, Waypoint } from '../src/features/map/model';
 
 const waypoint: Waypoint = {id:'wpt-1',name:'Camp',description:'Existing note',symbol:'',type:'',kind:'camp',lon:-73,lat:42,elevation:null,time:null};
 const trips = new Map([['trip-one',[waypoint]]]);
@@ -25,4 +26,12 @@ test('photo manifest rejects invalid references, duplicate IDs, coordinates, amb
  await assert.rejects(validatePhotoManifest({schemaVersion:1,trips:{'trip-one':{stops:[],photos:[{...photo,variants:'large'}]}}},trips,false),/variants must be an array/);
  await assert.rejects(validatePhotoManifest({schemaVersion:1,trips:{'trip-one':{stops:[],photos:[{...photo,credit:42}]}}},trips,false),/capturedAt and credit/);
  await assert.rejects(validatePhotoManifest({schemaVersion:1,trips:{'trip-one':{stops:[],photos:[{...photo,src:'/definitely-missing.webp'}]}}},trips),/missing photo asset/);
+});
+
+test('trip carousel orders photos by route sequence without mutating the input',()=>{
+ const photoAt=(id:string,order:number):TripPhoto=>({id,waypointId:'wpt-1',src:`/photos/trip-one/${id}.webp`,width:1600,height:1067,alt:id,caption:'',order});
+ const input=[photoAt('c',3),photoAt('a',1),photoAt('b',2)];
+ const ordered=orderedTripPhotos(input);
+ assert.deepEqual(ordered.map(photo=>photo.id),['a','b','c']);
+ assert.deepEqual(input.map(photo=>photo.id),['c','a','b']);
 });

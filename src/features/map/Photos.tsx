@@ -7,6 +7,8 @@ export type PhotoPlace = Waypoint | PhotoStop;
 export function placeIdForPhoto(photo: TripPhoto) { return photo.waypointId ?? photo.stopId!; }
 export function photosForPlace(photos: TripPhoto[], placeId: string) { return photos.filter(photo => placeIdForPhoto(photo) === placeId); }
 export function placeForPhoto(photo: TripPhoto, waypoints: Waypoint[], stops: PhotoStop[]) { return [...waypoints, ...stops].find(place => place.id === placeIdForPhoto(photo)) ?? null; }
+/** Trip photos in route order. Missing orders sort first, ties keep file order. */
+export function orderedTripPhotos(photos: TripPhoto[]) { return [...photos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); }
 function placeType(place: PhotoPlace) { return place.kind === 'photo' ? 'Photo stop' : place.kind.replace('-', ' / '); }
 
 function PhotoImage({photo, thumbnail = false, eager = false}: {photo: TripPhoto; thumbnail?: boolean; eager?: boolean}) {
@@ -55,19 +57,28 @@ export function PlaceDetail({place, photos, activePhotoId, onPhoto, onOpen, onBa
   </section>;
 }
 
-export function TripGallery({photos, waypoints, stops, onBack, onOpen, onPlace}: {photos: TripPhoto[]; waypoints: Waypoint[]; stops: PhotoStop[]; onBack: () => void; onOpen: (photo: TripPhoto, opener: HTMLElement) => void; onPlace: (place: PhotoPlace, photoId: string) => void}) {
-  return <section className="trip-gallery" aria-label="Trip photo gallery">
-    <button className="back-button place-back" onClick={onBack}>← Back to trip</button>
-    <div className="section-label">TRIP PHOTOS <span>{photos.length} {photos.length === 1 ? 'image' : 'images'}</span></div>
-    <div className="gallery-grid">{photos.map((photo, index) => {
+export function TripCarousel({photos, waypoints, stops, activePlaceId, onOpen, onPlace}: {photos: TripPhoto[]; waypoints: Waypoint[]; stops: PhotoStop[]; activePlaceId: string | null; onOpen: (photo: TripPhoto, opener: HTMLElement) => void; onPlace: (place: PhotoPlace, photoId: string) => void}) {
+  const ordered = orderedTripPhotos(photos);
+  const list = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!activePlaceId) return;
+    list.current?.querySelector<HTMLElement>('[data-active="true"]')?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }, [activePlaceId]);
+  return <div ref={list} className="trip-carousel" role="list" aria-label="Trip photos in route order">
+    {ordered.map((photo, index) => {
       const place = placeForPhoto(photo, waypoints, stops);
-      return <article key={photo.id} className="gallery-card">
-        <button className="gallery-image" aria-label={`Enlarge photo ${index + 1}: ${photo.alt}`} onClick={event => onOpen(photo, event.currentTarget)}><PhotoImage photo={photo} thumbnail /><span>{String(index + 1).padStart(2, '0')}</span></button>
-        <button className="gallery-place" onClick={() => place && onPlace(place, photo.id)} disabled={!place}><strong>{place?.name ?? 'Unknown place'}</strong><small>{place ? placeType(place) : 'Missing association'} · View on map ↗</small></button>
-        <p>{photo.caption || 'No caption.'}</p>
-      </article>;
-    })}</div>
-  </section>;
+      return <div key={photo.id} role="listitem" className="carousel-item" data-active={!!place && place.id === activePlaceId} data-place-id={place?.id}>
+        <div className="carousel-photo">
+          <button className="carousel-enlarge" aria-label={`Enlarge photo ${index + 1}: ${photo.alt}`} onClick={event => onOpen(photo, event.currentTarget)}>
+            <PhotoImage photo={photo} thumbnail />
+            <span className="carousel-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            {(photo.caption || photo.credit) && <span className="carousel-caption" aria-hidden="true"><span>{photo.caption}</span>{photo.credit && <small>Photo: {photo.credit}</small>}</span>}
+          </button>
+          {place && <button className="carousel-place" aria-label={`Jump to ${place.name} on the map`} onClick={() => onPlace(place, photo.id)}><span aria-hidden="true">↗</span> {place.name}</button>}
+        </div>
+      </div>;
+    })}
+  </div>;
 }
 
 export function PhotoLightbox({photos, activeId, scope, placeName, onChange, onClose}: {photos: TripPhoto[]; activeId: string; scope: 'place' | 'trip'; placeName: (photo: TripPhoto) => string; onChange: (id: string) => void; onClose: () => void}) {

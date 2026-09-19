@@ -69,7 +69,9 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   const mobile=window.matchMedia('(max-width: 700px)').matches;
   const height=map.current.getContainer().clientHeight;
   const labelPadding=selected?0:Math.ceil(Math.max(0,...trips.map(trip=>tripFlagWidth(trip.mapLabel)))/2)+12;
-  map.current.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]],{padding:mobile?{top:selected?85:100,left:Math.max(35,labelPadding),right:selected?80:68+labelPadding,bottom:panelOpen?Math.min(height*.49+30,height-170):100}:{top:90,bottom:65,left:panelOpen?358+Math.max(32,labelPadding):Math.max(65,labelPadding),right:selected?80:68+labelPadding},maxZoom:14,duration:duration()});
+  // Selected trips use the wide (390px) panel, so reserve room for it up front.
+  const panelPad=selected?410:358;
+  map.current.fitBounds([[bounds[0],bounds[1]],[bounds[2],bounds[3]]],{padding:mobile?{top:selected?85:100,left:Math.max(35,labelPadding),right:selected?80:68+labelPadding,bottom:panelOpen?Math.min(height*(selected?0.63:0.49)+30,height-170):100}:{top:90,bottom:65,left:panelOpen?panelPad+Math.max(32,labelPadding):Math.max(65,labelPadding),right:selected?80:68+labelPadding},maxZoom:14,duration:duration()});
  },[bounds,panelOpen,selected,trips]);
  const frameLatest=useRef(frame);frameLatest.current=frame;
  const previousSelection=useRef(selected?.id);

@@ -100,3 +100,22 @@ Six files had capture times but no GPS tags. Their temporary associations were o
 - Photo 56 (`IMG_3988.JPG`): `wpt-8`, Sugarloaf Summit, based on the visible ski lift.
 
 The public labels and captions are intentionally temporary: `Maine AT photo 01` through `Maine AT photo 86`.
+
+## Vermud 2021 import notes
+
+`vermud-2021-photos.zip` contained 55 files. The imported set is the 32 unique still photos captured July 2–5, 2021. Twenty-two `.MOV` files and one `.MP4` file were excluded (the site has no video support), and no duplicates were found. The source ZIP remains local and is ignored by Git; the site uses the optimized WebP assets in `public/photos/vermud-2021/`.
+
+Twenty-three photos had embedded GPS coordinates, all within 140 meters of the mapped route, and their markers use the recorded positions. Photos combine into one stop only when every image stays within 75 meters of the marker; the Stratton Pond evening and morning groups are about 170 meters apart, so they stay separate stops. One recorded position (photo 27) is about 137 meters off the route and is intentionally preserved instead of being moved onto the trail.
+
+Eight files had capture times but no GPS tags, plus one shared image with neither. Their temporary associations were owner-authorized using adjacent timestamps and visible landmarks:
+
+- Photos 04–06 (`IMG_5866.JPEG`, `IMG_5875.JPEG`, `IMG_5888.JPEG`, July 2 evening): `wpt-1`, Night 1 Goddard Shelter camp; photo 04 shows the Glastenbury Wilderness sign on the way in.
+- Photo 07 (`IMG_5895.JPEG`, July 3 mid-morning): `wpt-1`, camp before hiking out.
+- Photo 10 (`IMG_5921.JPEG`, July 3 afternoon): `wpt-2`, Night 2 Story Spring Shelter, reached by the 18:10 photos.
+- Photo 13 (`IMG_5939.JPEG`, July 4 early morning): `wpt-2`, tent and shelter-cooking morning.
+- Photo 16 (`IMG_5982.JPEG`, 13 minutes after photo 15): `vermud-stop-06`, same viewpoint.
+- Photo 18 (`IMG_5995.JPEG`, 6 minutes before photo 19): `vermud-stop-08`, Stratton Pond evening camp.
+- Photo 23 (`IMG_6020.JPEG`, between photos 22 and 25): `vermud-stop-09`, Stratton Pond morning.
+- Photo 32 (`A2156062-….jpg`, no timestamp or GPS): `vermud-stop-09`; the misty pond-morning coffee scene matches the July 5 Stratton Pond group.
+
+The public labels and captions are intentionally temporary: `Vermud photo 01` through `Vermud photo 32`.
