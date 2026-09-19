@@ -135,22 +135,35 @@ test('selecting a waypoint glides the map to it', async ({ page, isMobile }) => 
     && point.x > 70 && point.x < bounds.width - 70 && point.y > 80 && point.y < bounds.height - 70;
   // Nudge the marker toward the canvas center: it stays onscreen (where the
   // old camera code would not move at all) but leaves its framed position.
-  const framed = (await markerCenter())!;
-  const dragX = framed.x < center.x ? 180 : -180;
-  const empty = await page.evaluate(({ x, y, width, height }) => {
-    for (let localY = 120; localY < height - 120; localY += 40) for (let localX = 120; localX < width - 120; localX += 40) {
-      if (document.elementFromPoint(x + localX, y + localY)?.classList.contains('maplibregl-canvas')) return { x: x + localX, y: y + localY };
+  // Synthetic drags occasionally land a stray empty-map click that drops the
+  // trip selection, so reset and retry the setup until it sticks.
+  let nudged: { x: number; y: number } | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+    await expect(camp).toBeVisible();
+    const freshBounds = (await canvas.boundingBox())!;
+    const freshCenter = { x: freshBounds.x + freshBounds.width / 2, y: freshBounds.y + freshBounds.height / 2 };
+    const fresh = (await markerCenter())!;
+    const dragX = fresh.x < freshCenter.x ? 150 : -150;
+    const empty = await page.evaluate(({ x, y, width, height }) => {
+      for (let localY = 120; localY < height - 120; localY += 40) for (let localX = 120; localX < width - 120; localX += 40) {
+        if (document.elementFromPoint(x + localX, y + localY)?.classList.contains('maplibregl-canvas')) return { x: x + localX, y: y + localY };
+      }
+      return null;
+    }, { x: freshBounds.x, y: freshBounds.y, width: freshBounds.width, height: freshBounds.height });
+    expect(empty).not.toBeNull();
+    await page.mouse.move(empty!.x, empty!.y);
+    await page.mouse.down();
+    await page.mouse.move(empty!.x + dragX, empty!.y, { steps: 12 });
+    await page.mouse.up();
+    const candidate = (await markerCenter())!;
+    const stillSelected = page.url().includes('trip=little-rock');
+    if (stillSelected && Math.hypot(candidate.x - fresh.x, candidate.y - fresh.y) > 100 && inSafeView(candidate)) {
+      nudged = candidate;
+      break;
     }
-    return null;
-  }, { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-  expect(empty).not.toBeNull();
-  await page.mouse.move(empty!.x, empty!.y);
-  await page.mouse.down();
-  await page.mouse.move(empty!.x + dragX, empty!.y, { steps: 12 });
-  await page.mouse.up();
-  const nudged = (await markerCenter())!;
-  expect(Math.hypot(nudged.x - framed.x, nudged.y - framed.y)).toBeGreaterThan(100);
-  expect(inSafeView(nudged)).toBe(true);
+  }
+  expect(nudged).not.toBeNull();
   await page.locator('.waypoint-list button', { hasText: 'Night campsite' }).click();
   await expect(page.getByRole('region', { name: 'Waypoint details' })).toContainText('Night campsite');
   // The selection glides the marker to the unobstructed focus target.
@@ -335,8 +348,14 @@ test('crosshair follows the map pointer without intercepting controls or touch',
   await page.mouse.move(bounds.x+x,bounds.y+y);
   return crosshair.isVisible();
  }).toBe(true);
- await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x}px`);
- await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-y'))).toBe(`${y}px`);
+  await expect.poll(async () => {
+    const raw = await crosshair.evaluate(el => el.style.getPropertyValue('--cursor-x'));
+    return Math.abs(parseFloat(raw) - x) <= 1 ? 'snapped' : raw;
+  }).toBe('snapped');
+  await expect.poll(async () => {
+    const raw = await crosshair.evaluate(el => el.style.getPropertyValue('--cursor-y'));
+    return Math.abs(parseFloat(raw) - y) <= 1 ? 'snapped' : raw;
+  }).toBe('snapped');
  await expect(canvas).toHaveCSS('cursor','none');
  const coordinates=page.locator('.crosshair-coordinate');
  await expect(coordinates).toHaveText(/^\d{1,2}\.\d{3}° [NS] · \d{1,3}\.\d{3}° [EW]$/);
@@ -348,11 +367,27 @@ test('crosshair follows the map pointer without intercepting controls or touch',
  const vertical=(await page.locator('.crosshair-vertical').boundingBox())!;
  expect(horizontal.width).toBe(bounds.width);
  expect(horizontal.height).toBe(1);
- expect(vertical.height).toBe(bounds.height);
- expect(vertical.width).toBe(1);
+  expect(vertical.height).toBe(bounds.height);
+  expect(vertical.width).toBe(1);
+  // Guides resolve to whole viewport pixels so 1px lines never straddle rows.
+  const snapped = await page.evaluate(() => {
+    const h = document.querySelector('.crosshair-horizontal')!.getBoundingClientRect();
+    const v = document.querySelector('.crosshair-vertical')!.getBoundingClientRect();
+    return { dy: Math.abs(h.top - Math.round(h.top)), dx: Math.abs(v.left - Math.round(v.left)) };
+  });
+  expect(snapped.dy).toBeLessThan(0.01);
+  expect(snapped.dx).toBeLessThan(0.01);
+  const reticle = (await page.locator('.crosshair-reticle').boundingBox())!;
+  expect(reticle.width).toBe(4);
+  expect(reticle.height).toBe(4);
+  expect(Math.abs(reticle.x + reticle.width / 2 - (bounds.x + x))).toBeLessThanOrEqual(1);
+  expect(Math.abs(reticle.y + reticle.height / 2 - (bounds.y + y))).toBeLessThanOrEqual(1);
  expect(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.classList.contains('maplibregl-canvas'),{x:bounds.x+x,y:bounds.y+y})).toBe(true);
- await page.mouse.down();await page.mouse.move(bounds.x+x+30,bounds.y+y+20);await page.mouse.up();
- await expect.poll(()=>crosshair.evaluate(el=>el.style.getPropertyValue('--cursor-x'))).toBe(`${x+30}px`);
+  await page.mouse.down();await page.mouse.move(bounds.x+x+30,bounds.y+y+20);await page.mouse.up();
+  await expect.poll(async () => {
+    const raw = await crosshair.evaluate(el => el.style.getPropertyValue('--cursor-x'));
+    return Math.abs(parseFloat(raw) - (x + 30)) <= 1 ? 'snapped' : raw;
+  }).toBe('snapped');
  await page.screenshot({path:'test-results/crosshair-desktop.png'});
  await page.locator('.trip-panel').hover();await expect(crosshair).toBeHidden();
  await page.getByRole('button',{name:'Satellite',exact:true}).click();

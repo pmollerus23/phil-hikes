@@ -36,9 +36,13 @@ export default function TripFlag({ trip, selected = false, offset = DEFAULT_TRIP
   const labelEdgeY = 12;
   const labelHalfLine = width / 2 - 5;
   const labelJoinX = Math.max(-labelHalfLine, Math.min(labelHalfLine, anchorX));
-  const tetherPath = Math.abs(anchorX) <= labelHalfLine
+  const leader = Math.abs(anchorX) <= labelHalfLine
     ? `M ${anchorX} ${labelEdgeY} V ${anchorY}`
     : `M ${labelJoinX} ${labelEdgeY} H ${anchorX} V ${anchorY}`;
+  // Underline and leader share one path and one stroke so the joint can never
+  // render as a step: a CSS border and an SVG stroke antialias differently and
+  // sit on different centerlines, which read as jagged at every zoom.
+  const tetherPath = `M ${-labelHalfLine} ${labelEdgeY} H ${labelHalfLine} ${leader}`;
   const style = {
     width,
     '--anchor-x': `${anchorX}px`,

@@ -33,15 +33,24 @@ export default function MapCrosshair({ map, ready, satellite }: {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        element.style.setProperty('--cursor-x', `${x}px`);
-        element.style.setProperty('--cursor-y', `${y}px`);
-        const location = map.current!.unproject([x, y]);
+        element.hidden = false;
+        // Snap the guides in viewport space so each 1px line covers full
+        // physical pixels even when the map container sits at a fractional
+        // viewport offset (e.g. below the site header). The vars stay
+        // overlay-relative and may be fractional — what matters is they
+        // resolve to whole viewport pixels on screen.
+        const overlayBounds = element.getBoundingClientRect();
+        const canvasBounds = canvas.getBoundingClientRect();
+        const viewportX = Math.round(x + bounds.left);
+        const viewportY = Math.round(y + bounds.top);
+        element.style.setProperty('--cursor-x', `${viewportX - overlayBounds.left}px`);
+        element.style.setProperty('--cursor-y', `${viewportY - overlayBounds.top}px`);
+        const location = map.current!.unproject([viewportX - canvasBounds.left, viewportY - canvasBounds.top]);
         const latitude = `${Math.abs(location.lat).toFixed(3)}° ${location.lat >= 0 ? 'N' : 'S'}`;
         const longitude = `${Math.abs(location.lng).toFixed(3)}° ${location.lng >= 0 ? 'E' : 'W'}`;
         readout.textContent = `${latitude} · ${longitude}`;
         readout.classList.toggle('coordinate-left', x > bounds.width - 170);
         readout.classList.toggle('coordinate-above', y > bounds.height - 70);
-        element.hidden = false;
       });
     };
     canvas.addEventListener('pointermove', move);
@@ -69,6 +78,7 @@ export default function MapCrosshair({ map, ready, satellite }: {
   return <div ref={overlay} className={`map-crosshair${satellite ? ' map-crosshair-satellite' : ''}`} hidden aria-hidden="true">
     <span className="crosshair-horizontal" />
     <span className="crosshair-vertical" />
+    <span className="crosshair-reticle" />
     <span ref={coordinates} className="crosshair-coordinate" />
   </div>;
 }
