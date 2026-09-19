@@ -30,6 +30,3 @@ Thumbs.db
 *.swp
 *.swo
 *~
-
-# Agent artifacts
-AGENTS.md
