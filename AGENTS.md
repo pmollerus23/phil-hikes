@@ -23,6 +23,14 @@ Use Node 22.12+ and install dependencies with `npm ci`.
 
 Install Chromium with `npx playwright install chromium`, or set `CHROMIUM_PATH=/usr/bin/chromium`.
 
+## Deployment
+
+- Production is deployed as a static Astro site on the Netlify Personal plan. The primary domain is `https://phil-hikes.com/`, and the production map is at `https://phil-hikes.com/map/`. `https://www.phil-hikes.com/` redirects to the apex domain. The Netlify URL `https://phil-hikes.netlify.app/` remains an accessible fallback and advertises the custom domain as canonical.
+- Netlify runs `npm run build` and publishes Astro's `dist/` output. Netlify provides CDN delivery and managed HTTPS for the production domain.
+- Configure `PUBLIC_MAPTILER_KEY` as a Netlify environment variable available to the Builds scope and production deploy context. Astro inlines this browser key at build time, so changing its value requires a new build and deploy. Do not use a secret MapTiler service token in client code.
+- The MapTiler browser key's allowed HTTP origins are `localhost`, `127.0.0.1`, `phil-hikes.netlify.app`, `phil-hikes.com`, and `www.phil-hikes.com` (hostnames only, without schemes or paths). Preserve the local entries for development and all three deployed-domain entries when changing the key. Leave the allowed User-Agent restriction empty unless it is deliberately maintained; MapTiler applies origin and User-Agent restrictions together.
+- Changing only the MapTiler origin restriction does not require a Netlify redeploy. Add any future custom domain or deploy-preview hostname to the MapTiler allowlist before expecting maps to work there; do not broadly allow all `*.netlify.app` sites.
+
 ## Coding Style & Naming
 
 Use TypeScript, ES modules, single-quoted JavaScript strings, and semicolons. Prefer two-space indentation for new multiline code; preserve surrounding formatting without unrelated rewrites. Use PascalCase component filenames and camelCase functions/variables. No formatter or ESLint configuration currently exists.
@@ -56,6 +64,14 @@ Preserve the current lazy trip-detail loading and thinned archive previews. When
 
 Audit baseline from September 2026: Home ships no client JavaScript. The map’s first-party production load was about 669 KB compressed with provider responses mocked, including about 509 KB of JavaScript, a 31.6 KB trip index, and the 112 KB font. The index contained 12 trips, 2,403 preview coordinates, and 48 waypoints. Do not add vector tiling or server-side clustering at this scale without new evidence.
 
-## Commits & Pull Requests
+## Commits & Local Merge Workflow
 
-There are no commits yet, so no historical convention exists. Use concise imperative subjects, such as `Fix segment-aware elevation interaction`. Describe the behavior change, validation, relevant issues, and unresolved data/provider limitations. Include desktop/mobile screenshots for visual changes.
+Use concise imperative subjects, such as `Fix segment-aware elevation interaction`. Describe the behavior change, validation, relevant issues, and unresolved data/provider limitations. Include desktop/mobile screenshots for visual changes when useful.
+
+The owner performs all merges locally and pushes the resulting branches to `origin`; do not create or merge GitHub pull requests. When merging `dev` into `main`, preserve these invariants:
+
+1. Update the local branches from `origin` and complete the merge locally using the repository's current merge strategy.
+2. Run the required validation before pushing the merged result.
+3. After the merge to `main`, update `dev` to the resulting `main` commit, using a fast-forward when possible, so local `main` and `dev` resolve to the same commit.
+4. Push both `main` and `dev` to `origin`.
+5. Fetch `origin` and verify that local `main`, local `dev`, `origin/main`, and `origin/dev` all resolve to the same commit. `main...dev` and `origin/main...origin/dev` must each report zero commits ahead and zero behind before considering the merge complete.
