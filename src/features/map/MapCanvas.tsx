@@ -7,7 +7,8 @@ maplibregl.setWorkerUrl(workerUrl);
 import type { Bounds, PhotoStop, Point, Trip, TripDetail, TripPhoto, Waypoint } from './model';
 import { createTopoStyle, emptyTopoStyle } from './topoStyle';
 import WaypointIcon from './WaypointIcon';
-import TripFlag, { tripFlagWidth } from './TripFlag';
+import TripFlag, { tripFlagPosition, tripFlagWidth } from './TripFlag';
+import { DEFAULT_TRIP_FLAG_OFFSET, layoutTripFlags, type ScreenRect, type TripFlagOffset } from './tripFlagLayout';
 import MapCrosshair from './MapCrosshair';
 import { overlappingTripIds, shouldGroupWaypoints, tripAreasOverlap } from './waypointGrouping';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -19,6 +20,7 @@ export function archiveBounds(trips:Trip[]):Bounds|null {
 }
 export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,selected,detail,photoStops,photos,selectedPlaceId,style,terrain,apiKey,onSelect,onWaypoint,onError,panelOpen},ref) {
  const map=useRef<MapRef>(null), marker=useRef<maplibregl.Marker|null>(null);const [ready,setReady]=useState(false),[zoom,setZoom]=useState(3);
+ const lastSelectedId=useRef<string|null>(selected?.id??null);if(selected?.id)lastSelectedId.current=selected.id;
  const [topoStyle,setTopoStyle]=useState(emptyTopoStyle);
  useEffect(()=>{
   const controller=new AbortController();
@@ -30,17 +32,32 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
   return()=>controller.abort();
  },[apiKey,onError]);
  const [groupedTrips,setGroupedTrips]=useState<Set<string>>(new Set());
+ const [flagOffsets,setFlagOffsets]=useState<Record<string,TripFlagOffset>>({});
  const overlappingTrips=useMemo(()=>overlappingTripIds(trips),[trips]);
  const visibleTrips=useMemo(()=>selected?trips.filter(t=>t.id===selected.id||tripAreasOverlap(t.bounds,selected.bounds)):trips,[selected,trips]);
+ const arrangeFlags=useCallback((groups:Set<string>)=>{
+  if(!map.current)return;
+  const m=map.current,container=m.getContainer(),containerBox=container.getBoundingClientRect();
+  const flagTrips=visibleTrips.filter(t=>t.waypoints.length>0&&(groups.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id))));
+  const obstacles=[...document.querySelectorAll<HTMLElement>('.map-controls,.map-error,.maplibregl-ctrl-top-right,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right')].map(element=>{
+   const box=element.getBoundingClientRect();
+   return {left:box.left-containerBox.left-5,top:box.top-containerBox.top-5,right:box.right-containerBox.left+5,bottom:box.bottom-containerBox.top+5};
+  }).filter((box):box is ScreenRect=>box.right>0&&box.bottom>0&&box.left<container.clientWidth&&box.top<container.clientHeight);
+  const items=flagTrips.map(trip=>({id:trip.id,anchor:m.project(tripFlagPosition(trip)),width:tripFlagWidth(trip.mapLabel),priority:trip.id===selected?.id||trip.id===lastSelectedId.current}));
+  setFlagOffsets(previous=>{
+   const next=layoutTripFlags(items,{width:container.clientWidth,height:container.clientHeight},obstacles,previous);
+   const ids=Object.keys(next);
+   return ids.length===Object.keys(previous).length&&ids.every(id=>previous[id]?.x===next[id].x&&previous[id]?.y===next[id].y&&previous[id]?.hidden===next[id].hidden)?previous:next;
+  });
+ },[overlappingTrips,selected?.id,visibleTrips]);
  const syncGroups=useCallback(()=>{
   if(!map.current)return;
   const m=map.current;
   const nextZoom=m.getZoom();setZoom(previous=>Math.abs(previous-nextZoom)<.1?previous:nextZoom);
-  setGroupedTrips(previous=>{
-   const next=new Set(visibleTrips.filter(t=>shouldGroupWaypoints(t.waypoints.map(w=>m.project([w.lon,w.lat])),previous.has(t.id))).map(t=>t.id));
-   return next.size===previous.size&&[...next].every(id=>previous.has(id))?previous:next;
-  });
- },[visibleTrips]);
+  const next=new Set(visibleTrips.filter(t=>shouldGroupWaypoints(t.waypoints.map(w=>m.project([w.lon,w.lat])),groupedTrips.has(t.id))).map(t=>t.id));
+  arrangeFlags(next);
+  setGroupedTrips(previous=>next.size===previous.size&&[...next].every(id=>previous.has(id))?previous:next);
+ },[arrangeFlags,groupedTrips,visibleTrips]);
  useEffect(()=>{if(ready)syncGroups();},[ready,syncGroups]);
  const bounds=useMemo(()=>selected?.bounds??archiveBounds(trips),[selected,trips]);
  const overview=useMemo(()=>({type:'FeatureCollection' as const,features:trips.filter(t=>t.id!==selected?.id||!detail).flatMap(t=>t.overview.features)}),[trips,selected?.id,detail]);
@@ -106,7 +123,7 @@ export default memo(forwardRef<MapHandle,Props>(function MapCanvas({trips,select
    <Layer id="detail-line" type="line" paint={{'line-color':'#ff5f00','line-width':4}}/>
    <Layer id="detail-hit" type="line" paint={{'line-width':22,'line-opacity':0}}/>
   </Source>
-  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=>{
+  {visibleTrips.filter(t=>t.waypoints.length>0).flatMap(t=>(groupedTrips.has(t.id)||(t.id!==selected?.id&&overlappingTrips.has(t.id)))?[<TripFlag key={`trip-${t.id}`} trip={t} selected={selected?.id===t.id} offset={flagOffsets[t.id]??DEFAULT_TRIP_FLAG_OFFSET} onClick={()=>{if(selected?.id===t.id)frame();else onSelect(t.id);}} />]:t.waypoints.map(w=>{
    const photoCount=t.id===selected?.id?photos.filter(photo=>photo.waypointId===w.id).length:0;
    return <Marker key={`${t.id}-${w.id}`} longitude={w.lon} latitude={w.lat} anchor="center"><button className={`waypoint-marker kind-${w.kind}${selectedPlaceId===w.id?' place-selected':''}`} aria-label={`${w.name} · ${t.title}${photoCount?` · ${photoCount} ${photoCount===1?'photo':'photos'}`:''}`} title={w.name} onClick={e=>{e.stopPropagation();onWaypoint(t,w);}}><WaypointIcon kind={w.kind} />{photoCount>0&&<span className="marker-photo-count" aria-hidden="true">{photoCount}</span>}</button></Marker>;
   }))}

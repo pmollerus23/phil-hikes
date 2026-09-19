@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 // Local deterministic provider fixtures. These tests do NOT validate MapTiler services.
@@ -11,6 +11,23 @@ test.beforeEach(async({page})=>{
   return r.fulfill({path:'tests/fixtures/flat-dem.png',contentType:'image/png'});
  });
 });
+
+async function expectTripLabelsNotToOverlap(page: Page) {
+ await expect.poll(async()=>{
+  const boxes=await page.locator('.trip-marker-surface').evaluateAll(elements=>{
+   const map=document.querySelector('.maplibregl-map')!.getBoundingClientRect();
+   return elements.filter(element=>(element.parentElement as HTMLElement)?.dataset.hidden!=='true').map(element=>{
+    const {x,y,width,height}=element.getBoundingClientRect();return {x,y,width,height,label:element.textContent?.trim()??'',offset:(element.parentElement as HTMLElement)?.dataset.offset??''};
+   }).filter(box=>box.x<map.right&&box.x+box.width>map.left&&box.y<map.bottom&&box.y+box.height>map.top);
+  });
+  const overlaps:string[]=[];
+  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
+   const a=boxes[i],b=boxes[j];
+   if(a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y)overlaps.push(`${a.label} (${a.offset}; ${Math.round(a.x)},${Math.round(a.y)}) / ${b.label} (${b.offset}; ${Math.round(b.x)},${Math.round(b.y)})`);
+  }
+  return overlaps;
+ }).toEqual([]);
+}
 test('regenerating trip assets keeps them available on the running dev server',async({request})=>{
   test.skip(test.info().project.name!=='desktop','Run the importer once to avoid concurrent writes.');
   const files=['index.json','inventory.json','lspp-may-2025-canoe-trip.json'];
@@ -114,7 +131,7 @@ test('trip flags show identifying titles and years',async({page,isMobile})=>{
   const viewport=page.viewportSize()!;
   const controls=(await page.locator('.maplibregl-ctrl-top-right').boundingBox())!;
   for(const flag of [lspp,vermud]){
-    const box=(await flag.boundingBox())!;
+    const box=(await flag.locator('.trip-marker-surface').boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x+box.width).toBeLessThanOrEqual(viewport.width);
     const overlapsControls=box.x<controls.x+controls.width&&box.x+box.width>controls.x&&box.y<controls.y+controls.height&&box.y+box.height>controls.y;
@@ -124,7 +141,29 @@ test('trip flags show identifying titles and years',async({page,isMobile})=>{
     await lspp.hover();
     await expect.poll(()=>lspp.locator('.trip-marker-surface').evaluate(element=>getComputedStyle(element).transform)).not.toBe('none');
   }
+  const offsetsBefore=await Promise.all([lspp,vermud].map(flag=>flag.getAttribute('data-offset')));
+  await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+  await expect(lspp).toBeVisible();
+  await expect(vermud).toBeVisible();
+  await page.waitForTimeout(500);
+  const offsetsAfterZoom=await Promise.all([lspp,vermud].map(flag=>flag.getAttribute('data-offset')));
+  expect(offsetsAfterZoom.filter((offset,index)=>offset!==offsetsBefore[index]).length).toBeLessThanOrEqual(1);
+  await page.getByRole('button',{name:'Zoom out',exact:true}).click();
+  await expect.poll(()=>Promise.all([lspp,vermud].map(flag=>flag.getAttribute('data-offset')))).toEqual(offsetsAfterZoom);
   await page.screenshot({path:`test-results/trip-title-flags-${test.info().project.name}.png`,fullPage:true});
+});
+
+test('archive trip flags dynamically arrange without overlapping',async({page})=>{
+ await page.goto('/map');
+ await expect(page.locator('.trip-marker').first()).toBeVisible();
+ await expectTripLabelsNotToOverlap(page);
+ await page.locator('.panel-toggle').click();
+ await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+ await expectTripLabelsNotToOverlap(page);
+ const leaderPaths=await page.locator('.trip-marker[data-hidden=false] .trip-marker-tether path').evaluateAll(paths=>paths.map(path=>path.getAttribute('d')??''));
+ expect(leaderPaths.length).toBeGreaterThan(0);
+ expect(leaderPaths.every(path=>!/[LQCSTA]/i.test(path))).toBe(true);
+ await page.screenshot({path:`test-results/auto-arranged-trip-flags-${test.info().project.name}.png`,fullPage:true});
 });
 
 test('clearing selection restores other trips and gently zooms out around the current area', async({page,isMobile}) => {
@@ -149,7 +188,7 @@ test('clearing selection restores other trips and gently zooms out around the cu
   await expect.poll(readScale).toBeGreaterThan(0);
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const scaleBefore = await readScale();
-  const before = (await summer.boundingBox())!;
+  const before = (await summer.locator('.trip-marker-anchor').boundingBox())!;
   const canvas = page.locator('.maplibregl-canvas');
   const box = (await canvas.boundingBox())!;
   const x = box.x+(isMobile?box.width*.2:box.width-55), y = box.y+(isMobile?150:75);
@@ -166,18 +205,25 @@ test('clearing selection restores other trips and gently zooms out around the cu
   await expect.poll(async()=>(await readScale())/scaleBefore).toBeGreaterThan(1.6);
   expect((await readScale())/scaleBefore).toBeLessThan(1.8);
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const after = (await summer.boundingBox())!;
+  const after = (await summer.locator('.trip-marker-anchor').boundingBox())!;
   // The flag's route anchor scales toward the same map center by 0.75 zoom levels.
   const ratio = 2**-.75;
   const centerX = box.x+box.width/2, centerY = box.y+box.height/2;
   const expectedX = centerX+(before.x+before.width/2-centerX)*ratio-after.width/2;
-  const expectedY = centerY+(before.y+before.height-centerY)*ratio-after.height;
+  const expectedY = centerY+(before.y+before.height/2-centerY)*ratio-after.height/2;
   expect(Math.abs(after.x-expectedX)).toBeLessThan(2);
   expect(Math.abs(after.y-expectedY)).toBeLessThan(2);
   // Clicking again with no selection must not continue zooming out.
   const scaleAfter = await readScale();
-  if(isMobile)await page.touchscreen.tap(x,y);
-  else await page.mouse.click(x,y);
+  const emptyMapPoint=await page.evaluate(({x,y,width,height})=>{
+   for(let localY=70;localY<height-70;localY+=30)for(let localX=30;localX<width-30;localX+=30){
+    if(document.elementFromPoint(x+localX,y+localY)?.classList.contains('maplibregl-canvas'))return {x:x+localX,y:y+localY};
+   }
+   return null;
+  },box);
+  expect(emptyMapPoint).not.toBeNull();
+  if(isMobile)await page.touchscreen.tap(emptyMapPoint!.x,emptyMapPoint!.y);
+  else await page.mouse.click(emptyMapPoint!.x,emptyMapPoint!.y);
   expect(await readScale()).toBe(scaleAfter);
   await page.screenshot({path:`test-results/deselected-map-${test.info().project.name}.png`,fullPage:true});
   await page.goBack();
@@ -283,6 +329,10 @@ test('overlapping trips stay as labels until selected, and only the selected tri
  for(let i=0;i<3;i++) await page.getByRole('button',{name:'Zoom in',exact:true}).click();
  await expect(page.locator('.trip-marker')).toHaveCount(2);
  await expect(page.locator('.waypoint-marker')).toHaveCount(0);
+ const summerLabel=(await summer.locator('.trip-marker-surface').boundingBox())!;
+ const fallLabel=(await fall.locator('.trip-marker-surface').boundingBox())!;
+ const labelsOverlap=summerLabel.x<fallLabel.x+fallLabel.width&&summerLabel.x+summerLabel.width>fallLabel.x&&summerLabel.y<fallLabel.y+fallLabel.height&&summerLabel.y+summerLabel.height>fallLabel.y;
+ expect(labelsOverlap).toBe(false);
  // Restore the framing after zooming, then choose the route's floating label.
  await page.getByRole('button',{name:'Frame current trip or full archive'}).click();
  await fall.click();

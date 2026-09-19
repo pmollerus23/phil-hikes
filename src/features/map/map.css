@@ -28,23 +28,25 @@
 .map-crosshair-satellite .crosshair-coordinate{border-color:#ffffff4a;background:#10191ab8;color:#ffffffe0;box-shadow:0 3px 14px #0005;text-shadow:0 1px 2px #000}
 @media(hover:hover){.maplibregl-canvas,.maplibregl-canvas:active{cursor:none!important}}
 
-/* A quiet glass label with a map-anchored light trace. */
-.trip-marker{position:relative;display:block;height:56px;padding:0;border:0;background:transparent;color:var(--ink);cursor:pointer;isolation:isolate;pointer-events:none}
-.trip-marker-surface{position:absolute;inset:1px 0 auto;height:30px;display:grid;place-items:center;overflow:hidden;border:1px solid #17171730;background:linear-gradient(110deg,#ffffffc7,#f8ffffa8 62%,#fff5edb8);box-shadow:0 4px 14px #0000000d;backdrop-filter:blur(7px) saturate(1.2);pointer-events:auto;transition:color 180ms ease,border-color 180ms ease,background 180ms ease,box-shadow 180ms ease,transform 180ms ease}
-.trip-marker-surface::before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,#61d8e51f 42%,#ff790024 55%,transparent 72%);transform:translateX(-115%);transition:transform 520ms cubic-bezier(.2,.7,.2,1)}
-.trip-marker-surface::after{content:"";position:absolute;inset:0;border-top:1px solid #ffffffb8;box-shadow:inset 0 -1px #61d8e51c;pointer-events:none}
-.trip-marker-label{position:relative;z-index:1;padding:0 8px;font:700 7.5px/1 Helvetica,Arial,sans-serif;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px #fff}
-.trip-marker-tether{position:absolute;left:50%;top:31px;width:1px;height:21px;background:linear-gradient(#17171766,#61d8e565 72%,transparent);transform-origin:top;transition:height 180ms ease,opacity 180ms ease}
-.trip-marker-anchor{position:absolute;left:calc(50% - 2px);bottom:0;width:4px;height:4px;border:1px solid #ff7900b8;border-radius:50%;background:#fff9;box-shadow:0 0 0 2px #ff790018,0 0 9px #61d8e568;transition:background 180ms ease,box-shadow 180ms ease,transform 180ms ease}
-.trip-marker:hover .trip-marker-surface,.trip-marker:focus-visible .trip-marker-surface{color:#10191a;border-color:#61cbd1a8;background:linear-gradient(110deg,#ffffffdc,#effdffd1 58%,#fff4ebd1);box-shadow:0 5px 20px #49cbd02e,0 0 0 1px #ff790021;transform:translateY(-2px)}
-.trip-marker:hover .trip-marker-surface::before,.trip-marker:focus-visible .trip-marker-surface::before{transform:translateX(115%)}
-.trip-marker:hover .trip-marker-tether,.trip-marker:focus-visible .trip-marker-tether{height:23px;opacity:.9}
-.trip-marker:hover .trip-marker-anchor,.trip-marker:focus-visible .trip-marker-anchor{background:var(--accent);box-shadow:0 0 0 3px #ff79001f,0 0 12px #61d8e594;transform:scale(1.15)}
-.trip-marker[data-selected=true] .trip-marker-surface{color:#10191a;border-color:#ff790080;background:linear-gradient(110deg,#ffffffd6,#effdffd2 50%,#fff0e5d4);box-shadow:0 4px 18px #61d8e538,0 0 0 1px #ff79001c;animation:trip-hologram-pulse 2.8s ease-in-out infinite}
-.trip-marker[data-selected=true] .trip-marker-anchor{background:var(--accent);box-shadow:0 0 0 3px #ff790020,0 0 12px #61d8e58c}
-.trip-marker:active .trip-marker-surface{transform:translateY(0) scale(.98)}
+/* Open cartographic callouts: type, a hairline, and a route-anchored leader. */
+.trip-marker{position:relative;display:block;height:28px;padding:0;border:0;background:transparent;color:var(--ink);cursor:pointer;isolation:isolate;pointer-events:none}
+.trip-marker[data-hidden=true]{opacity:0;pointer-events:none}
+.trip-marker-surface{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#f7f9f500,#f7f9f573 10px calc(100% - 10px),#f7f9f500);pointer-events:auto;transition:color 160ms ease,transform 160ms ease}
+.trip-marker-surface::before{content:"";position:absolute;left:5px;right:5px;bottom:2px;border-bottom:1px solid #171717a6;transition:border-color 160ms ease,transform 160ms ease}
+.trip-marker-surface::after{content:"";position:absolute;right:5px;bottom:2px;width:1px;height:5px;background:#171717a6;transform-origin:bottom;transition:background 160ms ease,height 160ms ease}
+.trip-marker-label{position:relative;z-index:1;padding:0 10px 4px;font:700 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.78px;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 0 #fff,0 0 5px #fff}
+.trip-marker-tether{position:absolute;z-index:-1;left:50%;top:50%;overflow:visible;pointer-events:none}
+.trip-marker-tether path{fill:none;stroke:#17171770;stroke-width:1;stroke-linecap:square;stroke-linejoin:miter;vector-effect:non-scaling-stroke;transition:stroke 160ms ease}
+.trip-marker-anchor{position:absolute;z-index:2;left:calc(50% + var(--anchor-x) - 2px);top:calc(50% + var(--anchor-y) - 2px);width:5px;height:5px;border:1px solid #171717a6;border-radius:50%;background:#f7f9f599;pointer-events:none;transition:background 160ms ease,border-color 160ms ease,transform 160ms ease}
+.trip-marker:hover .trip-marker-surface,.trip-marker:focus-visible .trip-marker-surface{color:#111;transform:translateY(-1px)}
+.trip-marker:hover .trip-marker-surface::before,.trip-marker:focus-visible .trip-marker-surface::before{border-color:var(--accent);transform:scaleX(.96)}
+.trip-marker:hover .trip-marker-surface::after,.trip-marker:focus-visible .trip-marker-surface::after{height:8px;background:var(--accent)}
+.trip-marker:hover .trip-marker-tether path,.trip-marker:focus-visible .trip-marker-tether path{stroke:#171717a8}
+.trip-marker:hover .trip-marker-anchor,.trip-marker:focus-visible .trip-marker-anchor{border-color:var(--accent);background:var(--accent);transform:scale(1.16)}
+.trip-marker[data-selected=true] .trip-marker-surface::before{border-color:var(--accent)}
+.trip-marker[data-selected=true] .trip-marker-surface::after,.trip-marker[data-selected=true] .trip-marker-anchor{border-color:var(--accent);background:var(--accent)}
+.trip-marker:active .trip-marker-surface{transform:translateY(0)}
 .trip-marker:focus-visible{outline:0}
-@keyframes trip-hologram-pulse{0%,100%{box-shadow:0 4px 16px #61d8e526,0 0 0 1px #ff790017}50%{box-shadow:0 5px 22px #61d8e54a,0 0 0 1px #ff79002b}}
 
 /* Waypoint photos remain subordinate to the map and field notes. */
 .place-open .trip-panel{width:390px}.trip-title-row{display:flex;align-items:flex-start;gap:12px}.trip-title-row h1{flex:1}.photos-entry{flex:none;margin-top:11px;min-height:34px;padding:0 10px;border:1px solid var(--ink);background:transparent;font:700 9px/1 Helvetica,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase}.photos-entry:hover,.photos-entry:focus-visible{border-color:var(--accent);color:var(--accent)}
@@ -56,4 +58,4 @@
 .photo-stop-list{margin-top:8px}.photo-stop-buttons{padding-top:0;border-top:0}.photo-stop-buttons .list-photo-count{margin-left:auto}.photo-stop-buttons button>span:last-child{margin-left:0}
 .demo-ribbon{position:absolute;z-index:4;left:50%;top:0;transform:translateX(-50%);padding:5px 10px;background:var(--accent);color:#fff;font:700 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.1em;white-space:nowrap}.demo-ribbon~.map-controls{top:28px}
 @media(max-width:700px){.place-open .trip-panel{width:auto;max-height:62%}.trip-title-row{align-items:center}.trip-title-row h1{font-size:25px}.photos-entry{margin-top:0;min-height:44px}.place-detail{margin-top:14px;padding:16px}.photo-stage{max-height:300px}.photo-stage img{max-height:300px}.gallery-grid{gap:16px 8px}.photo-lightbox-backdrop{padding:0}.photo-lightbox{width:100%;height:100%}.photo-lightbox header{padding-left:max(16px,env(safe-area-inset-left));padding-top:env(safe-area-inset-top)}.photo-lightbox header button{width:56px;height:56px}.lightbox-image img{inset:8px;width:calc(100% - 16px);height:calc(100% - 16px)}.photo-lightbox footer{padding:14px max(54px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));min-height:108px}.photo-lightbox footer p{font-size:13px}.lightbox-prev,.lightbox-next{top:auto;bottom:calc(38px + env(safe-area-inset-bottom));width:44px;height:44px;background:transparent;color:var(--ink);border-color:#17171744}.lightbox-prev{left:auto;right:58px}.lightbox-next{right:10px}.demo-ribbon{top:auto;bottom:0}}
-@media(prefers-reduced-motion:reduce){.photo-lightbox-backdrop,.photo-stage img{scroll-behavior:auto}.trip-marker-surface,.trip-marker-surface::before,.trip-marker-tether,.trip-marker-anchor{transition:none!important}.trip-marker[data-selected=true] .trip-marker-surface{animation:none}}
+@media(prefers-reduced-motion:reduce){.photo-lightbox-backdrop,.photo-stage img{scroll-behavior:auto}.trip-marker-surface,.trip-marker-surface::before,.trip-marker-surface::after,.trip-marker-tether path,.trip-marker-anchor{transition:none!important}}
