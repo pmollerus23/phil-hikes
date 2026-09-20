@@ -1,5 +1,5 @@
 {
-  "beartown-tyringham-solo-1-nighter-july-2026": {"title":"Beartown to Tyringham", "region":"Massachusetts", "notes":"First solo overnight. Two route plans are preserved; the first extends beyond the marked starting point. Combined route distance may exceed the actual trip."},
+  "beartown-tyringham-solo-1-nighter-july-2026": {"title":"Beartown to Tyringham", "region":"Massachusetts", "pathIds":["rte-2"], "statsPathIds":["rte-2"], "statsLabel":"Route distance", "notes":"First solo overnight. Benedict Pond to Tyringham Cobble parking; archived Jacobs Ladder scenic-byway route excluded."},
   "dolly-sods-june-2023": {"title":"Dolly Sods · summer", "region":"West Virginia"},
   "dolly-sods-september-2025": {"title":"Dolly Sods · fall", "region":"West Virginia"},
   "johnson-lake-loop-mt-2024": {"title":"Johnson Lake loop", "region":"Montana", "pathIds":["rte-1"]},

@@ -71,13 +71,20 @@ test('protected areas, trails, borders, and state labels match live Planet v4 na
     { id: 'Other border z7', type: 'line', source: 'nature', 'source-layer': 'sub_border', minzoom: 7 },
     { id: 'State labels z4', type: 'symbol', source: 'nature', 'source-layer': 'state_label', minzoom: 4, layout: { 'text-field': ['get', 'name'] } },
     { id: 'City labels', type: 'symbol', source: 'nature', 'source-layer': 'city_label', minzoom: 5, layout: { 'text-field': ['get', 'name'] } },
-    { id: 'Road labels', type: 'symbol', source: 'nature', 'source-layer': 'road_label', minzoom: 8, layout: { 'text-field': ['get', 'name'] } },
+    { id: 'Road labels', type: 'symbol', source: 'nature', 'source-layer': 'road_label', minzoom: 8, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'] } },
+    { id: 'Major road', type: 'line', source: 'nature', 'source-layer': 'road', minzoom: 5, filter: ['all', ['match', ['get', 'class'], ['motorway'], true, false]], paint: { 'line-color': 'white' } },
+    { id: 'No access road', type: 'line', source: 'nature', 'source-layer': 'road', minzoom: 5, filter: ['all', ['match', ['get', 'access'], ['conditional'], true, false]] },
+    { id: 'Highway shield (US)', type: 'symbol', source: 'nature', 'source-layer': 'road_label', minzoom: 12, layout: { 'icon-image': 'us-interstate_2', 'text-field': '{ref}' }, paint: { 'text-color': 'black' } },
+    { id: 'Town labels', type: 'symbol', source: 'nature', 'source-layer': 'town_label', minzoom: 6, layout: { 'icon-image': 'dot', 'text-field': ['get', 'name'] }, paint: { 'text-color': 'black', 'text-halo-width': 1.6 } },
+    { id: 'Village labels', type: 'symbol', source: 'nature', 'source-layer': 'place_label', minzoom: 9, layout: { 'text-field': ['get', 'name'] } },
   ] };
   const topo = createTopoStyle(style);
   assert.deepEqual(topo.layers.map(l => l.id), [
     'Water', 'Protected area fill', 'Protected area outline',
     'Protected area major labels', 'Protected area labels',
     'Park labels', 'Longdistance trail', 'Other trails', 'Path', 'Longdistance trail labels', 'Other border z7', 'State labels z4',
+    'City labels', 'Road labels', 'Major road', 'Highway shield (US)', 'Town labels', 'Village labels',
+    'Regional trail', 'Regional trail labels', 'Regional trail ref labels',
   ]);
   // Provider per-zoom curation is preserved; park POIs arrive earlier on the sparse topo.
   assert.equal(topo.layers.find(l => l.id === 'Protected area major labels')?.minzoom, 4);
@@ -90,7 +97,50 @@ test('protected areas, trails, borders, and state labels match live Planet v4 na
   const fill = topo.layers.find(l => l.id === 'Protected area fill');
   assert.ok(fill?.type === 'fill');
   assert.equal(fill.minzoom, 7);
+  // Towns, cities, and road names join the topo with provider minzooms intact.
+  const city = topo.layers.find(l => l.id === 'City labels');
+  assert.ok(city?.type === 'symbol');
+  assert.equal(city.minzoom, 5);
+  assert.ok(city.paint?.['text-color'] !== undefined);
+  const roadLabels = topo.layers.find(l => l.id === 'Road labels');
+  assert.ok(roadLabels?.type === 'symbol');
+  assert.equal(roadLabels.minzoom, 8);
+  // Road casings keep provider paint; shields keep sprites and paint.
+  const majorRoad = topo.layers.find(l => l.id === 'Major road');
+  assert.ok(majorRoad?.type === 'line');
+  assert.deepEqual(majorRoad.paint, { 'line-color': 'white' });
+  const shield = topo.layers.find(l => l.id === 'Highway shield (US)');
+  assert.ok(shield?.type === 'symbol');
+  assert.deepEqual(shield.paint, { 'text-color': 'black' });
+  assert.equal(shield.layout?.['icon-image'], 'us-interstate_2');
+  const town = topo.layers.find(l => l.id === 'Town labels');
+  assert.ok(town?.type === 'symbol');
+  assert.equal(town.layout?.['icon-image'], 'dot');
+  assert.equal(town.paint?.['text-halo-width'], 1.6);
+  // Signed regional routes (rwn, e.g. the Long Trail) get major-trail lines and names.
+  const regional = topo.layers.find(l => l.id === 'Regional trail');
+  assert.ok(regional?.type === 'line');
+  assert.equal(regional.minzoom, 8);
+  assert.ok(JSON.stringify(regional.filter).includes('"rwn"'));
+  assert.deepEqual(regional.paint?.['line-color'], major.paint?.['line-color']);
+  const regionalLabels = topo.layers.find(l => l.id === 'Regional trail labels');
+  assert.ok(regionalLabels?.type === 'symbol');
+  assert.equal(regionalLabels.minzoom, 10);
+  assert.ok(JSON.stringify(regionalLabels.filter).includes('"rwn"'));
+  // The name layer inherits placement from the working road-label template.
+  assert.equal(regionalLabels.layout?.['symbol-placement'], 'line');
+  assert.deepEqual(regionalLabels.layout?.['text-field'], ['coalesce', ['get', 'name:en'], ['get', 'name']]);
+  assert.equal(regionalLabels.source, 'nature');
+  assert.equal(regionalLabels['source-layer'], 'trail');
+  assert.equal(regionalLabels.layout?.['text-max-angle'], 90);
+  // Short ref badges place on twisty runs where full names cannot fit.
+  const regionalRef = topo.layers.find(l => l.id === 'Regional trail ref labels');
+  assert.ok(regionalRef?.type === 'symbol');
+  assert.deepEqual(regionalRef.layout?.['text-field'], ['get', 'ref']);
+  assert.equal(regionalRef.layout?.['text-max-angle'], 90);
+  assert.equal(regionalRef.layout?.['text-allow-overlap'], true);
   assert.deepEqual(validateStyleMin(topo), []);
+  assert.deepEqual(validateStyleMin(createTopoStyle(style, 'mono')), []);
 });
 
 test('mono renders the same geography in grayscale', () => {
@@ -125,6 +175,6 @@ test('current Planet v4 woodland and water labels are retained', () => {
     { id: 'City labels', type: 'symbol', source: 'nature', 'source-layer': 'city_label' },
   ] };
   const topo = createTopoStyle(style);
-  assert.deepEqual(topo.layers.map(l => l.id), ['Forest', 'Wood', 'Lake labels', 'River labels']);
+  assert.deepEqual(topo.layers.map(l => l.id), ['Forest', 'Wood', 'Lake labels', 'River labels', 'City labels']);
   assert.deepEqual(validateStyleMin(topo), []);
 });

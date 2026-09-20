@@ -102,6 +102,16 @@ function isLongDistanceTrail(layer: LayerSpecification): boolean {
   return text.includes('"nwn"') || text.includes('"iwn"');
 }
 
+/** Restricted-access road variants (gated, conditional, no-access) stay off the hiking topo. */
+function isRestrictedRoad(layer: LayerSpecification): boolean {
+  return filterText(layer).includes('"conditional"');
+}
+
+/** Highway shields keep their provider sprite icons and paint untouched. */
+function isHighwayShield(layer: LayerSpecification): boolean {
+  return /shield/i.test(layer.id);
+}
+
 /** Cycle-route layers (class or icn/ncn networks) stay off the hiking topo. */
 function isBicycleTrail(layer: LayerSpecification): boolean {
   const text = filterText(layer);
@@ -159,6 +169,17 @@ export function createTopoStyle(style: StyleSpecification, paletteName: TopoPale
       layer.paint = { 'line-color': major ? palette.trailMajor : palette.trail, 'line-width': major ? 1.3 : 1, 'line-opacity': 0.85 };
     } else if (layer.type === 'line' && sourceLayer === 'pathway') {
       layer.paint = { 'line-color': palette.path, 'line-width': 0.8, 'line-opacity': 0.8 };
+    } else if (layer.type === 'line' && sourceLayer === 'road' && !isRestrictedRoad(layer)) {
+      // Major, minor, bridge, and tunnel roads keep their provider casing: pale
+      // fills with gray outlines read on the paper background in both palettes.
+    } else if (layer.type === 'symbol' && sourceLayer === 'road_label' && !isHighwayShield(layer)) {
+      layer.paint = { ...layer.paint, 'text-color': palette.label, 'text-halo-color': palette.halo };
+    } else if (layer.type === 'symbol' && sourceLayer === 'road_label') {
+      // Highway shields keep provider sprites and paint untouched.
+    } else if (layer.type === 'symbol' && ['city_label', 'town_label', 'place_label'].includes(sourceLayer ?? '')) {
+      // Cities, towns, villages, and hamlets keep provider minzooms and sizes;
+      // only the text is pulled into the topo palette.
+      layer.paint = { ...layer.paint, 'text-color': palette.label, 'text-halo-color': palette.halo };
     } else if (layer.type === 'line' && ['sub_border', 'country_border', 'boundary'].includes(sourceLayer ?? '')) {
       layer.paint = { 'line-color': palette.border, 'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.6, 12, 1.2], 'line-opacity': 0.75, 'line-dasharray': [3, 2] };
     } else if (layer.type === 'symbol' && ['protected_area_major_label', 'protected_area_minor_label'].includes(sourceLayer ?? '')) {
@@ -198,6 +219,49 @@ export function createTopoStyle(style: StyleSpecification, paletteName: TopoPale
     const outline: LayerSpecification = { id: 'Protected area outline', type: 'line', source, 'source-layer': 'protected_area', minzoom: 7, filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'line-color': palette.protectedLine, 'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.7, 14, 1.2], 'line-opacity': 0.9, 'line-dasharray': [3, 2] } };
     const lastFill = layers.map((layer) => layer.type).lastIndexOf('fill');
     layers.splice(Math.max(lastFill + 1, 1), 0, fill, outline);
+  }
+  // Regional walking routes (network rwn, e.g. Vermont's Long Trail) have no
+  // dedicated provider layers: their ways only match the generic uncolored
+  // trail line. Draw signed regional routes and their names in the major-trail
+  // treatment so they read like the iwn/nwn long-distance trails. The name
+  // layer clones the working road-label definition and retargets it, so it
+  // inherits proven placement, spacing, and sizing.
+  const regionalFilter: NonNullable<Extract<LayerSpecification, { type: 'line' }>['filter']> = ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'network'], 'rwn'], ['has', 'ref']];
+  const regionalLabelFilter: NonNullable<Extract<LayerSpecification, { type: 'symbol' }>['filter']> = ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'network'], 'rwn'], ['has', 'ref']];
+  const trailSource = layers.find((layer) => layer.type === 'line' && 'source-layer' in layer && layer['source-layer'] === 'trail' && 'source' in layer && typeof layer.source === 'string');
+  const roadLabelTemplate = style.layers.find((layer) => layer.type === 'symbol' && 'source-layer' in layer && layer['source-layer'] === 'road_label' && 'layout' in layer && layer.layout?.['symbol-placement'] === 'line');
+  if (trailSource && 'source' in trailSource && typeof trailSource.source === 'string') {
+    const source = trailSource.source;
+    const regional: LayerSpecification = { id: 'Regional trail', type: 'line', source, 'source-layer': 'trail', minzoom: 8, filter: regionalFilter, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': palette.trailMajor, 'line-width': 1.4, 'line-opacity': 0.9 } };
+    layers.push(regional);
+    if (roadLabelTemplate && roadLabelTemplate.type === 'symbol') {
+      const regionalLabels = structuredClone(roadLabelTemplate);
+      regionalLabels.id = 'Regional trail labels';
+      regionalLabels.source = source;
+      (regionalLabels as { 'source-layer'?: string })['source-layer'] = 'trail';
+      regionalLabels.minzoom = 10;
+      regionalLabels.filter = regionalLabelFilter;
+      if (regionalLabels.layout) {
+        regionalLabels.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name']];
+        // Mountain trails switchback constantly: allow labels to follow up to
+        // 90-degree turns instead of the default 45, or twisty runs place
+        // nothing at all. Tighter spacing adds anchors along long runs.
+        regionalLabels.layout['text-max-angle'] = 90;
+        regionalLabels.layout['symbol-spacing'] = 200;
+      }
+      // Short ref badges ("LT") place far more reliably than full names: the
+      // angle check walks half the label length each way, so a badge crosses
+      // far fewer switchbacks. They read like highway shields for trails.
+      const regionalRefLabels = structuredClone(regionalLabels);
+      regionalRefLabels.id = 'Regional trail ref labels';
+      if (regionalRefLabels.layout) {
+        regionalRefLabels.layout['text-field'] = ['get', 'ref'];
+        regionalRefLabels.layout['text-size'] = 10;
+        regionalRefLabels.layout['symbol-spacing'] = 150;
+        regionalRefLabels.layout['text-allow-overlap'] = true;
+      }
+      layers.push(regionalLabels, regionalRefLabels);
+    }
   }
   const usedSources = new Set(layers.flatMap((layer) => ('source' in layer ? [layer.source] : [])));
   return { ...style, name: paletteName === 'mono' ? 'Minimal mono' : 'Minimal topo', layers, sources: Object.fromEntries(Object.entries(style.sources).filter(([id]) => usedSources.has(id))) };

@@ -23,7 +23,7 @@ Imported 12 files. Counts below are source counts; derived endpoint markers are 
 - rte-1-s1: identical point timestamps; not travel timing
 - rte-2-s1: identical point timestamps; not travel timing
 - Multiple planned routes may overlap or be alternatives; totals are mapped geometry, not measured travel.
-- Metadata note: First solo overnight. Two route plans are preserved; the first extends beyond the marked starting point. Combined route distance may exceed the actual trip.
+- Metadata note: First solo overnight. Benedict Pond to Tyringham Cobble parking; archived Jacobs Ladder scenic-byway route excluded.
 
 ### Dolly Sods · summer
 - rte-1-s1: identical point timestamps; not travel timing
