@@ -29,15 +29,24 @@ test('unknown ID, panel collapse, keyboard access, and shared Home link',async({
  await page.screenshot({path:`test-results/home-${test.info().project.name}.png`,fullPage:true});
 });
 test('missing key setup, responsive layout and no unexpected JS errors',async({page})=>{
- const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/map');await expect(page.getByRole('heading',{name:/Places worth/})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Your next view starts here.'})).toBeVisible();await expect(page.getByRole('button',{name:'Satellite',exact:true})).toBeDisabled();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);expect(errors).toEqual([]);await page.screenshot({path:`test-results/archive-${test.info().project.name}.png`,fullPage:true});
+  const engineRequests:string[]=[];page.on('request',request=>{if(/MapCanvas|maplibre/i.test(request.url()))engineRequests.push(request.url());});
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/map');await expect(page.getByRole('heading',{name:/Places worth/})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Your next view starts here.'})).toBeVisible();await expect(page.getByRole('button',{name:'Satellite',exact:true})).toBeDisabled();
+  // Without a key the engine chunk and worker are never requested.
+  expect(engineRequests).toEqual([]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);expect(errors).toEqual([]);await page.screenshot({path:`test-results/archive-${test.info().project.name}.png`,fullPage:true});
 });
 test('empty archive and missing index show usable explanations',async({page})=>{
  await page.route('**/trips/index.json',r=>r.fulfill({json:[]}));await page.goto('/map');await expect(page.getByText(/No trips imported yet/)).toBeVisible();await page.unroute('**/trips/index.json');await page.route('**/trips/index.json',r=>r.fulfill({status:404}));await page.reload();await expect(page.getByRole('alert')).toContainText('Trip archive is missing');await expect(page.getByRole('button',{name:'Retry archive'})).toBeVisible();
 });
 test('failed detail retains summary and offers retry',async({page})=>{
  await page.route(`**/trips/${id}.json`,r=>r.fulfill({status:500}));await page.goto(`/map?trip=${id}`);await expect(page.getByRole('alert')).toContainText('detailed route could not load');await expect(page.getByRole('button',{name:'Retry detail'})).toBeVisible();await page.unroute(`**/trips/${id}.json`);await page.getByRole('button',{name:'Retry detail'}).click();await page.getByRole('button',{name:'ⓘ Trip info'}).click();await expect(page.getByRole('slider')).toBeVisible();
+});
+test('revisiting a trip reuses its validated detail without refetching',async({page})=>{
+  let detailRequests=0;page.on('request',request=>{if(request.url().includes('/trips/beartown-tyringham-solo-1-nighter-july-2026.json'))detailRequests++;});
+  await page.goto('/map');await page.getByRole('button',{name:/01 Beartown/}).click();await expect(page.getByRole('slider')).toBeVisible();expect(detailRequests).toBe(1);
+  await page.getByRole('button',{name:'← All trips'}).click();await page.getByRole('button',{name:/Otter Creek West Virginia/}).click();await expect(page.getByRole('heading',{name:'Otter Creek',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'← All trips'}).click();await page.getByRole('button',{name:/01 Beartown/}).click();await expect(page.getByRole('slider')).toBeVisible();expect(detailRequests).toBe(1);
 });
 test('late detail response cannot replace a newer selection',async({page})=>{
  await page.route('**/trips/beartown-tyringham-solo-1-nighter-july-2026.json',async route=>{await new Promise(resolve=>setTimeout(resolve,600));try{await route.continue();}catch{/* request aborted by selection */}});

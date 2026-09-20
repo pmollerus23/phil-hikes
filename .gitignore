@@ -1,6 +1,7 @@
 # Dependencies and Astro build/cache output
 node_modules/
 dist/
+dist-perf/
 .astro/
 *.tsbuildinfo
 

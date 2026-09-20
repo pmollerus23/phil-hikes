@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PhotoStop, TripPhoto, Waypoint } from './model';
 import WaypointIcon from './WaypointIcon';
 
@@ -10,16 +10,25 @@ export function placeForPhoto(photo: TripPhoto, waypoints: Waypoint[], stops: Ph
 /** Trip photos in route order. Missing orders sort first, ties keep file order. */
 export function orderedTripPhotos(photos: TripPhoto[]) { return [...photos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); }
 function placeType(place: PhotoPlace) { return place.kind === 'photo' ? 'Photo stop' : place.kind.replace('-', ' / '); }
+// Responsive candidates shared by rendering and preloading so a preloaded
+// neighbor resolves to the same asset the viewer will display.
+function responsiveSource(photo: TripPhoto) {
+  const variants = photo.variants?.slice().sort((a, b) => a.width - b.width);
+  return {
+    srcSet: variants?.length ? variants.map(variant => `${variant.src} ${variant.width}w`).join(', ') : undefined,
+    sizes: variants?.length ? '(max-width: 700px) 92vw, 760px' : undefined,
+  };
+}
 
 function PhotoImage({photo, thumbnail = false, eager = false}: {photo: TripPhoto; thumbnail?: boolean; eager?: boolean}) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [photo.id, thumbnail]);
   if (failed) return <div className={`photo-fallback ${thumbnail ? 'photo-fallback-thumb' : ''}`} role="img" aria-label={`${photo.alt}. Image unavailable.`}><span>Image unavailable</span></div>;
-  const variants = photo.variants?.slice().sort((a, b) => a.width - b.width);
+  const { srcSet, sizes } = responsiveSource(photo);
   return <img
     src={thumbnail && photo.thumbnailSrc ? photo.thumbnailSrc : photo.src}
-    srcSet={!thumbnail && variants?.length ? variants.map(variant => `${variant.src} ${variant.width}w`).join(', ') : undefined}
-    sizes={!thumbnail && variants?.length ? '(max-width: 700px) 92vw, 760px' : undefined}
+    srcSet={!thumbnail ? srcSet : undefined}
+    sizes={!thumbnail ? sizes : undefined}
     width={photo.width}
     height={photo.height}
     alt={photo.alt}
@@ -58,7 +67,13 @@ export function PlaceDetail({place, photos, activePhotoId, onPhoto, onOpen, onBa
 }
 
 export function TripCarousel({photos, waypoints, stops, activePlaceId, onOpen, onPlace}: {photos: TripPhoto[]; waypoints: Waypoint[]; stops: PhotoStop[]; activePlaceId: string | null; onOpen: (photo: TripPhoto, opener: HTMLElement) => void; onPlace: (place: PhotoPlace, photoId: string) => void}) {
-  const ordered = orderedTripPhotos(photos);
+  const ordered = useMemo(() => orderedTripPhotos(photos), [photos]);
+  const placesById = useMemo(() => {
+    const places = new Map<string, PhotoPlace>();
+    for (const waypoint of waypoints) places.set(waypoint.id, waypoint);
+    for (const stop of stops) places.set(stop.id, stop);
+    return places;
+  }, [waypoints, stops]);
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!activePlaceId) return;
@@ -66,7 +81,7 @@ export function TripCarousel({photos, waypoints, stops, activePlaceId, onOpen, o
   }, [activePlaceId]);
   return <div ref={list} className="trip-carousel" role="list" aria-label="Trip photos in route order">
     {ordered.map((photo, index) => {
-      const place = placeForPhoto(photo, waypoints, stops);
+      const place = placesById.get(placeIdForPhoto(photo)) ?? null;
       return <div key={photo.id} role="listitem" className="carousel-item" data-active={!!place && place.id === activePlaceId} data-place-id={place?.id}>
         <div className="carousel-photo">
           <button className="carousel-enlarge" aria-label={`Enlarge photo ${index + 1}: ${photo.alt}`} onClick={event => onOpen(photo, event.currentTarget)}>
@@ -105,7 +120,20 @@ export function PhotoLightbox({photos, activeId, scope, placeName, onChange, onC
   }, [activeId, photos.length]);
   useEffect(() => {
     if (photos.length < 2) return;
-    for (const next of [photos[(index - 1 + photos.length) % photos.length], photos[(index + 1) % photos.length]]) { const image = new Image(); image.src = next.src; }
+    // Skip speculative preloads for users who asked to save data.
+    if (typeof navigator !== 'undefined' && (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+    // Bounded to neighboring photos while the viewer is open. The set
+    // deduplicates the same neighbor in two-photo collections. Sizes/srcset
+    // are assigned before src so the preload resolves to the same responsive
+    // candidate the viewer will display instead of a fallback asset.
+    const neighbors = new Set([photos[(index - 1 + photos.length) % photos.length], photos[(index + 1) % photos.length]]);
+    for (const next of neighbors) {
+      const { srcSet, sizes } = responsiveSource(next);
+      const image = new Image();
+      if (srcSet) image.srcset = srcSet;
+      if (sizes) image.sizes = sizes;
+      image.src = next.src;
+    }
   }, [index, photos]);
   useEffect(() => { const overflow=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=overflow;}; }, []);
   if (!active) return null;
