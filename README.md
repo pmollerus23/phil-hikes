@@ -98,3 +98,18 @@ Source baseline: **12 trips, 0 tracks, 25 routes (one empty), 31,717 geometry po
 Build/type checks and automated parser/URL/profile/reconciliation tests are required. Browser suites cover desktop/mobile direct links, history, selection, profile slider, waypoint details, collapse/reopen, and error states. Renderer tests use local fixtures only. **No live MapTiler key was available during implementation:** real Outdoor/Satellite tiles, provider attribution content, terrain elevation accuracy, and live provider style behavior still need checking with an authorized key. The local fixtures do not replace those checks.
 
 [Implementation verification results](docs/verification.md): build and type checks passed; 11 unit cases, 16 archive browser cases, and 6 fixture-renderer browser cases passed. Desktop and mobile screenshots were inspected.
+
+
+## Local merge workflow
+
+Merge feature branches into `dev` locally; do not create or merge GitHub pull requests. Fetch and update both branches, merge using the current Git strategy, and validate the combined result before pushing. Run `npm run check`, `npm test`, and `npm run build`, plus relevant browser suites for interface or dependency changes. Use `npm ci` first when the lockfile changes.
+
+After pushing, fetch and confirm `dev` matches `origin/dev` with zero commits ahead or behind. Verify that both the local and remote feature tips are included in the merged `dev`, then delete the feature branch on `origin` and locally:
+
+```sh
+git push origin --delete <feature-branch>
+git branch -d <feature-branch>
+git fetch origin --prune
+```
+
+Confirm both feature references are gone and the working tree is clean. Never force-delete an unmerged feature branch; leave `main` unchanged during this flow. See [Commits & Local Merge Workflow](AGENTS.md#commits--local-merge-workflow) for the full procedure, including the separate `dev`-to-`main` synchronization rules.

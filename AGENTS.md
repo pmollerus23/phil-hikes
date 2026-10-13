@@ -80,7 +80,18 @@ Audit baseline from September 2026: The former Home (now Computer Programmer) pa
 
 Use concise imperative subjects, such as `Fix segment-aware elevation interaction`. Describe the behavior change, validation, relevant issues, and unresolved data/provider limitations. Include desktop/mobile screenshots for visual changes when useful.
 
-The owner performs all merges locally and pushes the resulting branches to `origin`; do not create or merge GitHub pull requests. When merging `dev` into `main`, preserve these invariants:
+Perform all merges locally and push the resulting branches to `origin`; do not create or merge GitHub pull requests.
+
+When merging a feature branch into `dev`:
+
+1. Start with a clean working tree, fetch `origin`, and update the local feature branch and `dev` from their remote branches without discarding local commits.
+2. Merge the feature branch into local `dev` using the repository's current merge strategy. A fast-forward is appropriate when possible; otherwise use a regular merge commit.
+3. Run checks, unit tests, and the production build against the combined result; run relevant browser suites for interface changes and dependency updates. For lockfile changes, install with `npm ci` before validation. Resolve failures before completing and pushing the merge.
+4. Push `dev` to `origin`, fetch again, and verify that local `dev` and `origin/dev` resolve to the same commit with zero commits ahead and zero behind.
+5. Verify that both the local feature tip and its remote tip, if present, are ancestors of the merged `dev`. Only then delete the feature branch from `origin` and locally, using `git push origin --delete <feature-branch>` and `git branch -d <feature-branch>`. Do not force-delete an unmerged branch.
+6. Fetch with pruning and verify that both feature branch references are gone and the working tree is clean. Leave `main` unchanged during a feature-to-`dev` merge.
+
+When merging `dev` into `main`, preserve these invariants:
 
 1. Update the local branches from `origin` and complete the merge locally using the repository's current merge strategy.
 2. Run the required validation before pushing the merged result.
