@@ -20,6 +20,6 @@ test('preconnect hint is map-only and carries no key', () => {
   assert.match(hint, /\{map && mapKey &&/);
   assert.match(hint, /href="https:\/\/api\.maptiler\.com"/);
   assert.doesNotMatch(hint, /key=/);
-  const home = readFileSync(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
-  assert.doesNotMatch(home, /preconnect/);
+  const programmer = readFileSync(new URL('../src/pages/computer-programmer.astro', import.meta.url), 'utf8');
+  assert.doesNotMatch(programmer, /preconnect|MapApp|client:only/);
 });

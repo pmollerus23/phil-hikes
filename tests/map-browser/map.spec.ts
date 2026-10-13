@@ -58,7 +58,7 @@ test('regenerating trip assets keeps them available on the running dev server',a
 test('Maine shows one continuous route, a photo carousel, and trip info on demand',async({page,isMobile})=>{
   const inventory=await (await page.request.get('/trips/index.json')).json();
   await page.route('**/trips/index.json',route=>route.fulfill({json:inventory.filter((trip:{id:string})=>trip.id==='maine-august-2026')}));
-  await page.goto('/map?trip=maine-august-2026');
+  await page.goto('/?trip=maine-august-2026');
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   const carousel=page.getByRole('list',{name:'Trip photos in route order'});
   await expect(carousel).toBeVisible();
@@ -100,7 +100,7 @@ test('updated trips render their current routes, profiles, and waypoint notes',a
     {id:'lspp-may-2025-canoe-trip',max:'926',waypoints:6,paths:1,waypoint:/Base Camp.*camp/,note:'Ranger Cabin'},
   ];
   for(const trip of cases){
-    await page.goto(`/map?trip=${trip.id}`);
+    await page.goto(`/?trip=${trip.id}`);
     await expect(page.locator('.maplibregl-canvas')).toBeVisible();
     if(trip.photos){
       await expect(page.getByRole('list',{name:'Trip photos in route order'}).locator('.carousel-item')).toHaveCount(trip.photos);
@@ -120,7 +120,7 @@ test('updated trips render their current routes, profiles, and waypoint notes',a
 });
 test('real MapLibre canvas, overlays, style switch, terrain control, and profile marker survive UI changes',async({page})=>{
   let demRequests=0,terrainTileJson=0;page.on('request',r=>{if(r.url().includes('/fixture/'))demRequests++;if(r.url().includes('terrain-rgb'))terrainTileJson++;});
-  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/?trip=little-rock-creek-lake-mt-2024');
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();await expect(page.locator('.waypoint-marker')).toHaveCount(3);
   // The DEM source stays unmounted until terrain is first requested.
   expect(terrainTileJson).toBe(0);
@@ -138,7 +138,7 @@ test('real MapLibre canvas, overlays, style switch, terrain control, and profile
 });
 test('elevation hover follows the pointer, clears without a late marker, and never moves the camera',async({page,isMobile})=>{
   test.skip(!!isMobile,'Hover is desktop-only; the slider path is covered elsewhere.');
-  await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+  await page.goto('/?trip=little-rock-creek-lake-mt-2024');
   const slider=page.getByRole('slider');
   await expect(slider).toBeVisible();
   const svg=page.locator('.profile svg');
@@ -178,7 +178,7 @@ test('elevation hover follows the pointer, clears without a late marker, and nev
   expect(Math.abs(returned!.y-center!.y)).toBeLessThan(2);
 });
 test('map route can be selected, and provider failure has an actionable message',async({page})=>{
- await page.goto('/map?trip=little-rock-creek-lake-mt-2024');await expect(page.locator('.waypoint-marker')).not.toHaveCount(0);
+ await page.goto('/?trip=little-rock-creek-lake-mt-2024');await expect(page.locator('.waypoint-marker')).not.toHaveCount(0);
  const start=page.getByRole('button',{name:'Start of mapped geometry · Little Rock Creek Lake'});await expect(start).toBeVisible();
  // Marker anchor is an actual route vertex. Remove marker hit targets to exercise the line layer underneath.
  await page.locator('.panel-toggle').click();await page.getByRole('button',{name:'Satellite',exact:true}).click();await page.getByRole('button',{name:'Topo',exact:true}).click();await page.waitForTimeout(800);
@@ -189,7 +189,7 @@ test('map route can be selected, and provider failure has an actionable message'
 test('archive stays usable when the map engine import fails',async({page})=>{
   await page.route(/MapCanvas/,route=>route.abort());
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+  await page.goto('/?trip=little-rock-creek-lake-mt-2024');
   await expect(page.getByText('Map rendering is unavailable')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Little Rock Creek Lake',exact:true})).toBeVisible();
   await expect(page.getByRole('slider')).toBeVisible();
@@ -219,7 +219,7 @@ test('a place selected while the engine loads is applied once ready',async({page
 test('unsupported WebGL retains the trip archive',async({page})=>{
   const engineRequests:string[]=[];page.on('request',request=>{if(/MapCanvas|maplibre/i.test(request.url()))engineRequests.push(request.url());});
   await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:any[]){if(type==='webgl2')return null;return original.apply(this,[type,...args] as any);} as typeof original;});
-  await page.goto('/map?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
+  await page.goto('/?trip=shenandoah');await expect(page.getByText('This browser cannot render WebGL maps.',{exact:false})).toBeVisible();await expect(page.getByRole('heading',{name:'Shenandoah',exact:true})).toBeVisible();await expect(page.getByRole('slider')).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(0);
   // Without WebGL the engine chunk and worker are never requested.
   expect(engineRequests).toEqual([]);
@@ -251,7 +251,7 @@ test('selecting a waypoint glides the map to it', async ({ page, isMobile }) => 
   // The drag-to-displace setup deselects the trip on touch viewports, so this
   // camera assertion runs on desktop; the focus path itself is shared.
   test.skip(!!isMobile, 'Touch drag setup deselects the trip; desktop covers the shared focus path.');
-  await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+  await page.goto('/?trip=little-rock-creek-lake-mt-2024');
   const camp = page.getByRole('button', { name: /Night campsite · Little Rock/ });
   await expect(camp).toBeVisible();
   const canvas = page.locator('.maplibregl-canvas');
@@ -269,7 +269,7 @@ test('selecting a waypoint glides the map to it', async ({ page, isMobile }) => 
   // trip selection, so reset and retry the setup until it sticks.
   let nudged: { x: number; y: number } | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+    await page.goto('/?trip=little-rock-creek-lake-mt-2024');
     await expect(camp).toBeVisible();
     const freshBounds = (await canvas.boundingBox())!;
     const freshCenter = { x: freshBounds.x + freshBounds.width / 2, y: freshBounds.y + freshBounds.height / 2 };
@@ -310,7 +310,7 @@ test('trip flags show identifying titles and years',async({page,isMobile})=>{
   const inventory=await (await page.request.get('/trips/index.json')).json();
   const trips=inventory.filter((trip:{id:string})=>['lspp-may-2025-canoe-trip','vermud-2021'].includes(trip.id));
   await page.route('**/trips/index.json',route=>route.fulfill({json:trips}));
-  await page.goto('/map');
+  await page.goto('/');
   const lspp=page.getByRole('button',{name:'Trip · LSPP canoe trip',exact:true});
   const vermud=page.getByRole('button',{name:'Trip · Vermud · the Long Trail',exact:true});
   await expect(lspp).toBeVisible();
@@ -343,11 +343,14 @@ test('trip flags show identifying titles and years',async({page,isMobile})=>{
 });
 
 test('archive trip flags dynamically arrange without overlapping',async({page})=>{
- await page.goto('/map');
+ await page.goto('/');
  await expect(page.locator('.trip-marker').first()).toBeVisible();
  await expectTripLabelsNotToOverlap(page);
  await page.locator('.panel-toggle').click();
+ // Reframe for the collapsed panel before checking labels at a closer zoom.
+ await page.getByRole('button',{name:'Frame current trip or full archive',exact:true}).click();
  await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+ await expect.poll(()=>page.locator('.trip-marker[data-hidden=false] .trip-marker-tether path').count()).toBeGreaterThan(0);
  await expectTripLabelsNotToOverlap(page);
  const leaderPaths=await page.locator('.trip-marker[data-hidden=false] .trip-marker-tether path').evaluateAll(paths=>paths.map(path=>path.getAttribute('d')??''));
  expect(leaderPaths.length).toBeGreaterThan(0);
@@ -359,7 +362,7 @@ test('clearing selection restores other trips and gently zooms out around the cu
   const inventory = await (await page.request.get('/trips/index.json')).json();
   const trips = inventory.filter((trip: {id:string}) => trip.id.startsWith('dolly-sods-') || trip.id==='little-rock-creek-lake-mt-2024');
   await page.route('**/trips/index.json', route => route.fulfill({json:trips}));
-  await page.goto('/map?trip=dolly-sods-september-2025');
+  await page.goto('/?trip=dolly-sods-september-2025');
   // The engine chunk loads lazily: wait for initial framing before capturing geometry.
   await expect(page.locator('.map-loading')).toHaveCount(0);
   const summer = page.getByRole('button',{name:'Trip · Dolly Sods · summer',exact:true});
@@ -436,7 +439,7 @@ test('clearing selection restores other trips and gently zooms out around the cu
 });
 
 test('zooming out groups each trip and its marker restores individual waypoints', async({page}) => {
- await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+ await page.goto('/?trip=little-rock-creek-lake-mt-2024');
  await expect(page.locator('.waypoint-marker')).toHaveCount(3);
  await page.locator('.panel-toggle').click();
  for(let i=0;i<6;i++) await page.getByRole('button',{name:'Zoom out',exact:true}).click();
@@ -459,7 +462,7 @@ test('zooming out groups each trip and its marker restores individual waypoints'
 });
 
 test('crosshair follows the map pointer without intercepting controls or touch', async({page,isMobile}) => {
- await page.goto('/map?trip=little-rock-creek-lake-mt-2024');
+ await page.goto('/?trip=little-rock-creek-lake-mt-2024');
  const canvas=page.locator('.maplibregl-canvas');
  const crosshair=page.locator('.map-crosshair');
  await expect(page.locator('.waypoint-marker')).toHaveCount(3);
@@ -526,14 +529,14 @@ test('crosshair follows the map pointer without intercepting controls or touch',
  await page.screenshot({path:'test-results/crosshair-satellite.png'});
  await page.keyboard.press('Tab');await expect(crosshair).toBeHidden();
  await page.mouse.move(bounds.x+x+2,bounds.y+y);await expect(crosshair).toBeVisible();
- await page.getByRole('link',{name:'Home',exact:true}).hover();await expect(crosshair).toBeHidden();
+ await page.getByRole('link',{name:'Inner Outdoorsman',exact:true}).hover();await expect(crosshair).toBeHidden();
 });
 
 test('overlapping trips stay as labels until selected, and only the selected trip expands', async({page}) => {
  const inventory = await (await page.request.get('/trips/index.json')).json();
  const trips = inventory.filter((trip: { id: string }) => trip.id.startsWith('dolly-sods-'));
  await page.route('**/trips/index.json', route => route.fulfill({json:trips}));
- await page.goto('/map');
+ await page.goto('/');
  const summer = page.getByRole('button',{name:'Trip · Dolly Sods · summer',exact:true});
  const fall = page.getByRole('button',{name:'Trip · Dolly Sods · fall',exact:true});
  await expect(summer).toBeVisible();

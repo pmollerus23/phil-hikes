@@ -3,7 +3,7 @@
 ## Project Structure & Architecture
 
 - `src/pages/` owns Astro routes; `src/layouts/Shell.astro` provides shared navigation.
-- `src/features/map/` contains the isolated React/TypeScript application, typed data model, MapLibre renderer, profiles, URL helpers, and styles. Mount it with `client:only="react"`; keep map dependencies off Home. Astro owns navigation; React owns map selection.
+- `src/features/map/` contains the isolated React/TypeScript application, typed data model, MapLibre renderer, profiles, URL helpers, and styles. Mount it with `client:only="react"`; keep map dependencies off the Computer Programmer page. Astro owns navigation; React owns map selection.
 - `scripts/` parses GPX, validates authored photo metadata, and generates `public/trips/` assets and `docs/trip-inventory.md`.
 - `gpx_map_data/` holds original exports; `data/trip-overrides.json` holds presentation corrections; `data/trip-photos.json` holds authored photo, caption, and place associations.
 - `public/photos/` holds web-ready trip images. Keep originals and source archives out of generated trip data; follow `docs/photos.md` when importing or associating photos.
@@ -25,7 +25,7 @@ Install Chromium with `npx playwright install chromium`, or set `CHROMIUM_PATH=/
 
 ## Deployment
 
-- Production is deployed as a static Astro site on the Netlify Personal plan. The primary domain is `https://phil-hikes.com/`, and the production map is at `https://phil-hikes.com/map/`. `https://www.phil-hikes.com/` redirects to the apex domain. The Netlify URL `https://phil-hikes.netlify.app/` remains an accessible fallback and advertises the custom domain as canonical.
+- Production is deployed as a static Astro site on the Netlify Personal plan. The primary domain is `https://phil-hikes.com/`, and the production map is at `https://phil-hikes.com/`; legacy `/map/` links redirect to the homepage. `https://www.phil-hikes.com/` redirects to the apex domain. The Netlify URL `https://phil-hikes.netlify.app/` remains an accessible fallback and advertises the custom domain as canonical.
 - Netlify runs `npm run build` and publishes Astro's `dist/` output. Netlify provides CDN delivery and managed HTTPS for the production domain.
 - Configure `PUBLIC_MAPTILER_KEY` as a Netlify environment variable available to the Builds scope and production deploy context. Astro inlines this browser key at build time, so changing its value requires a new build and deploy. Do not use a secret MapTiler service token in client code.
 - The MapTiler browser key's allowed HTTP origins are `localhost`, `127.0.0.1`, `phil-hikes.netlify.app`, `phil-hikes.com`, and `www.phil-hikes.com` (hostnames only, without schemes or paths). Preserve the local entries for development and all three deployed-domain entries when changing the key. Leave the allowed User-Agent restriction empty unless it is deliberately maintained; MapTiler applies origin and User-Agent restrictions together.
@@ -74,7 +74,7 @@ Preserve the current lazy trip-detail loading and thinned archive previews. When
 5. Add production compression, immutable caching for hashed `_astro` assets, appropriate revalidation for trip JSON, and a MapTiler preconnect when deployment is configured.
 6. Throttle waypoint grouping during map movement if the archive grows substantially.
 
-Audit baseline from September 2026: Home ships no client JavaScript. The map’s first-party production load was about 669 KB compressed with provider responses mocked, including about 509 KB of JavaScript, a 31.6 KB trip index, and the 112 KB font. The index contained 12 trips, 2,403 preview coordinates, and 48 waypoints. Do not add vector tiling or server-side clustering at this scale without new evidence.
+Audit baseline from September 2026: The former Home (now Computer Programmer) page ships no client JavaScript. The map’s first-party production load was about 669 KB compressed with provider responses mocked, including about 509 KB of JavaScript, a 31.6 KB trip index, and the 112 KB font. The index contained 12 trips, 2,403 preview coordinates, and 48 waypoints. Do not add vector tiling or server-side clustering at this scale without new evidence.
 
 ## Commits & Local Merge Workflow
 

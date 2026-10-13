@@ -181,25 +181,25 @@ async function main() {
           new PerformanceObserver((list) => { window.__longtasks.push(...list.getEntries().map((e) => e.duration)); }).observe({ entryTypes: ['longtask'] });
         });
         await installProviderFixture(page);
-        all.push(await measureScenario(page, viewportName, 'cold /map/', async () => {
+        all.push(await measureScenario(page, viewportName, 'cold /', async () => {
           const coldStart = Date.now();
-          await page.goto(`${baseURL}/map/`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('heading', { name: /Places worth|Little Rock/ }).first().waitFor();
           const archiveUsableMs = Date.now() - coldStart;
           const canvasStart = Date.now();
           await page.locator('.maplibregl-canvas').waitFor({ timeout: 30000 });
           return { archiveUsableMs, firstCanvasMs: Date.now() - canvasStart };
         }));
-        all.push(await measureScenario(page, viewportName, 'warm /map/', async () => {
-          await page.goto(`${baseURL}/map/`, { waitUntil: 'domcontentloaded' });
+        all.push(await measureScenario(page, viewportName, 'warm /', async () => {
+          await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
           await page.locator('.maplibregl-canvas').waitFor({ timeout: 30000 });
         }));
         all.push(await measureScenario(page, viewportName, 'direct trip link', async () => {
-          await page.goto(`${baseURL}/map?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('slider').waitFor({ timeout: 30000 });
         }));
         all.push(await measureScenario(page, viewportName, 'select/revisit trip', async () => {
-          await page.goto(`${baseURL}/map/`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('button', { name: /01 Beartown/ }).click();
           await page.getByRole('slider').waitFor({ timeout: 30000 });
           await page.getByRole('button', { name: '← All trips' }).click();
@@ -207,7 +207,7 @@ async function main() {
           await page.getByRole('slider').waitFor({ timeout: 30000 });
         }));
         all.push(await measureScenario(page, viewportName, 'lightbox navigate', async () => {
-          await page.goto(`${baseURL}/map?trip=maine-august-2026`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/?trip=maine-august-2026`, { waitUntil: 'domcontentloaded' });
           const first = page.getByRole('button', { name: /Enlarge photo 1:/ });
           await first.waitFor({ timeout: 30000 });
           await first.click();
@@ -217,7 +217,7 @@ async function main() {
           await page.keyboard.press('Escape');
         }));
         all.push(await measureScenario(page, viewportName, 'terrain + style transitions', async () => {
-          await page.goto(`${baseURL}/map?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
           await page.locator('.maplibregl-canvas').waitFor({ timeout: 30000 });
           await page.getByRole('button', { name: /3D terrain/ }).click();
           await page.waitForTimeout(1500);
@@ -228,7 +228,7 @@ async function main() {
           }
         }));
         all.push(await measureScenario(page, viewportName, 'profile pointer sweep', async () => {
-          await page.goto(`${baseURL}/map?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${baseURL}/?trip=little-rock-creek-lake-mt-2024`, { waitUntil: 'domcontentloaded' });
           const svg = page.locator('.profile svg');
           await svg.waitFor({ timeout: 30000 });
           await svg.scrollIntoViewIfNeeded();
@@ -281,7 +281,7 @@ async function main() {
       console.log(`| ${viewport} ${kind} | ${median(d)} (${spread(d)}) | ${median(rows.map((r) => r.longtasks))} | ${median(rows.map((r) => r.requests))} | ${median(rows.map((r) => r.bytes))} |`);
     }
   }
-  const cold = all.filter((s) => s.kind === 'cold /map/');
+  const cold = all.filter((s) => s.kind === 'cold /');
   for (const viewport of ['desktop', 'mobile']) {
     const rows = cold.filter((s) => s.viewport === viewport);
     if (!rows.length) continue;

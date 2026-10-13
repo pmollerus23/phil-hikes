@@ -1,6 +1,6 @@
-# Phil’s field notes
+# Inner Outdoorsman
 
-An Astro portfolio shell with an isolated React/TypeScript hiking archive at `/map`. All 12 supplied Gaia exports are imported. Original GPX files remain unchanged in `gpx_map_data/`, outside `public/` and the build output. The development server also denies direct requests to that directory.
+An Astro portfolio shell with an isolated React/TypeScript hiking archive at `/`. All 12 supplied Gaia exports are imported. Original GPX files remain unchanged in `gpx_map_data/`, outside `public/` and the build output. The development server also denies direct requests to that directory.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Open http://localhost:4321/map. No key is necessary to browse trip summaries, notes, waypoints, or elevation profiles. The map shows setup instructions until configured; no fallback tile service is used. Restart the server after editing `.env` (`npx astro dev stop` first if it is running in the background).
+Open http://localhost:4321/. No key is necessary to browse trip summaries, notes, waypoints, or elevation profiles. The map shows setup instructions until configured; no fallback tile service is used. Restart the server after editing `.env` (`npx astro dev stop` first if it is running in the background).
 
 See [Adding trip photos](docs/photos.md) for the photo folder convention, responsive image guidance, manifest examples, waypoint ID discovery, and validation workflow. A synthetic interaction preview is available at `/photo-demo?trip=little-rock-creek-lake-mt-2024`; it does not add invented content to the normal archive.
 
@@ -83,11 +83,11 @@ Optional `pathIds` chooses an ordered subset of source paths to publish in the m
 
 ## Interface and boundaries
 
-Shared 48px Astro navigation, `/` home, browser-only React island at `/map`, keyboard-accessible trip list, collapsible desktop panel/mobile bottom sheet, selectable camps/waypoints, full-resolution profile with pointer/touch/keyboard interaction, Outdoor/Satellite styles, optional terrain, archive reset, and `/map?trip=<id>` links with browser back/forward support. No React router; Astro owns page navigation. Home includes no map/React script payload.
+Shared 48px Astro navigation, browser-only React island at `/`, Computer Programmer page at `/computer-programmer/`, keyboard-accessible trip list, collapsible desktop panel/mobile bottom sheet, selectable camps/waypoints, full-resolution profile with pointer/touch/keyboard interaction, Outdoor/Satellite styles, optional terrain, archive reset, and `/?trip=<id>` links with browser back/forward support. No React router; Astro owns page navigation. The Computer Programmer page includes no map/React script payload. Legacy `/map` links redirect to `/`, preserving query parameters and fragments.
 
 Map state is uncontrolled during camera movement. Geometry is rendered in layers; only the small number of waypoints use HTML markers. Profile movement updates a local profile component and an imperative map marker, not the entire interface. Fetches are validated and aborted on selection change/unmount; map listeners and profile markers are cleaned up. Missing/invalid files, empty archives, failed requests, provider errors, unsupported WebGL, and missing configuration have visible fallback states.
 
-Deferred: playback, in-browser uploads/editing, advanced filtering, accounts, private collections, synchronization, offline maps, and a geospatial backend. Large archives would benefit from geometry tiling and waypoint clustering. MapLibre remains a sizable map-only JavaScript chunk; it is not sent to Home.
+Deferred: playback, in-browser uploads/editing, advanced filtering, accounts, private collections, synchronization, offline maps, and a geospatial backend. Large archives would benefit from geometry tiling and waypoint clustering. MapLibre remains a sizable map-only JavaScript chunk; it is not sent to the Computer Programmer page.
 
 ## Inventory and verification
 
