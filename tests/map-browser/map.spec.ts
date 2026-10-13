@@ -418,6 +418,8 @@ test('clearing selection restores other trips and gently zooms out around the cu
   expect(Math.abs(after.y-expectedY)).toBeLessThan(2);
   // Clicking again with no selection must not continue zooming out.
   const scaleAfter = await readScale();
+  // Separate taps must fall outside the map’s double-tap zoom gesture window.
+  if(isMobile)await page.waitForTimeout(350);
   await tapEmptyMap(page, box, isMobile);
   expect(await readScale()).toBe(scaleAfter);
   await page.screenshot({path:`test-results/deselected-map-${test.info().project.name}.png`,fullPage:true});
