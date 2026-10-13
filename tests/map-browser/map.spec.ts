@@ -581,3 +581,27 @@ test('overlapping trips stay as labels until selected, and only the selected tri
  await expect(page.locator('.waypoint-marker')).toHaveCount(0);
  await expect(page.locator('.trip-marker')).toHaveCount(2);
 });
+
+
+test('distance scale stays to the right of the provider logo across map states', async ({ page }) => {
+  await page.goto('/?trip=little-rock-creek-lake-mt-2024');
+  const logo = page.getByRole('link', { name: 'MapTiler', exact: true });
+  const scale = page.locator('.maplibregl-ctrl-scale');
+  await expect(logo).toBeVisible();
+  await expect(scale).toBeVisible();
+  const expectAligned = async () => {
+    const logoBox = (await logo.boundingBox())!;
+    const scaleBox = (await scale.boundingBox())!;
+    expect(scaleBox.x - (logoBox.x + logoBox.width)).toBeCloseTo(8, 0);
+    expect(scaleBox.y + scaleBox.height).toBeCloseTo(logoBox.y + logoBox.height, 0);
+    expect(await scale.evaluate(element => getComputedStyle(element).textAlign)).toBe('left');
+  };
+  await expectAligned();
+  await page.locator('.panel-toggle').click();
+  await expectAligned();
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await expectAligned();
+  await page.getByRole('button', { name: 'Satellite', exact: true }).click();
+  await expectAligned();
+  await page.screenshot({ path: `test-results/scale-logo-${test.info().project.name}.png` });
+});
